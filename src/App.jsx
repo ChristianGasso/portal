@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react'
 import PortalLayout from './components/PortalLayout'
 import DashboardPage from './pages/DashboardPage'
 import AvisPage from './pages/AvisPage'
-import OperatoriPage from './pages/OperatoriPage'
 import DonatoriPage from './pages/DonatoriPage'
 import ConfigurazioniPage from './pages/ConfigurazioniPage'
 
-const validPages = new Set(['dashboard', 'avis', 'operatori', 'donatori', 'configurazioni'])
+const validPages = new Set(['dashboard', 'avis', 'donatori', 'configurazioni'])
 
 function getPageFromHash() {
   const raw = window.location.hash.replace(/^#\/?/, '')
@@ -30,7 +29,6 @@ export default function App() {
 
   let pageContent = <DashboardPage onNavigate={navigate} />
   if (activePage === 'avis') pageContent = <AvisPage />
-  if (activePage === 'operatori') pageContent = <OperatoriPage />
   if (activePage === 'donatori') pageContent = <DonatoriPage />
   if (activePage === 'configurazioni') pageContent = <ConfigurazioniPage />
 
