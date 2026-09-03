@@ -34,6 +34,11 @@ jobs:
       - name: Esegui build
         run: npm run build
 
+      - name: Prepara backend PHP
+        run: |
+          mkdir -p dist/api
+          cp -R backend/. dist/api/
+
       - name: Installa client SFTP
         run: sudo apt-get update && sudo apt-get install -y lftp
 
@@ -52,6 +57,6 @@ jobs:
           set sftp:auto-confirm yes
           set net:max-retries 2
           set net:timeout 20
-          mirror --reverse --delete --verbose dist/ /
+          mirror --reverse --delete --verbose --exclude-glob api/config/local.php dist/ /
           bye
           EOF
