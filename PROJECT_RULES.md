@@ -6,13 +6,16 @@
 
 ## Stato repository
 
-Questo repository contiene il frontend operativo del Portale amministrativo centrale SanguePro.
+Questo repository contiene il Portal amministrativo centrale SanguePro, comprensivo di:
 
-Il Portal è un'applicazione separata da:
+- frontend React;
+- backend PHP dedicato al Portal.
+
+Il Portal resta separato da:
 
 - gestionale operativo delle singole AVIS;
 - app donatori;
-- backend PHP.
+- backend operativo del gestionale.
 
 ## URL pubblico
 
@@ -22,7 +25,7 @@ https://portal.sangueprogestionale.it
 
 ## Hosting
 
-La build del Portal viene pubblicata sul server IONOS nella directory:
+Il Portal viene pubblicato sul server IONOS nella directory:
 
 ```txt
 /portal
@@ -32,6 +35,40 @@ Il deploy utilizza un accesso SFTP dedicato limitato alla directory `/portal`.
 
 Le credenziali SFTP non devono mai essere salvate nel repository.
 
+## Struttura progetto
+
+Il frontend React resta nella struttura attuale del repository.
+
+Il backend PHP dedicato al Portal deve essere creato sotto:
+
+```txt
+backend/
+```
+
+La struttura prevista è:
+
+```txt
+backend/
+├── auth/
+├── avis/
+├── donatori/
+└── config/
+```
+
+In fase di deploy il backend deve essere pubblicato sotto:
+
+```txt
+/portal/api/
+```
+
+Gli endpoint pubblici del Portal avranno quindi URL del tipo:
+
+```txt
+https://portal.sangueprogestionale.it/api/auth/...
+https://portal.sangueprogestionale.it/api/avis/...
+https://portal.sangueprogestionale.it/api/donatori/...
+```
+
 ## Scopo del Portal
 
 Il Portal è la console amministrativa centrale della piattaforma SanguePro.
@@ -40,8 +77,8 @@ Deve consentire agli amministratori di gestire, progressivamente:
 
 - AVIS e sedi;
 - stato delle AVIS;
-- account operatori;
-- ruoli e permessi;
+- operatori collegati a ciascuna AVIS;
+- ruoli e permessi degli operatori;
 - configurazione dell'app donatori;
 - link e token pubblici di registrazione donatori;
 - utilizzo e limiti;
@@ -59,7 +96,7 @@ La sicurezza non deve mai dipendere esclusivamente dal frontend.
 
 Nascondere pulsanti, pagine o route non costituisce un controllo di sicurezza.
 
-Ogni endpoint backend utilizzato dal Portal deve verificare lato server:
+Ogni endpoint backend del Portal deve verificare lato server:
 
 - validità del token;
 - identità dell'utente autenticato;
@@ -69,31 +106,29 @@ Ogni endpoint backend utilizzato dal Portal deve verificare lato server:
 
 Un token appartenente a un utente non admin non deve poter utilizzare endpoint amministrativi, anche tramite chiamate API dirette.
 
-## Backend
+Le operazioni amministrative sensibili, incluse modifica, disabilitazione, cancellazione e gestione permessi, devono essere eseguibili esclusivamente con un token appartenente a un utente con ruolo `admin`.
 
-Il backend operativo è:
+## Backend Portal
 
-```txt
-ChristianGasso/server-app
-```
-
-Gli endpoint specifici del Portal devono essere collocati preferibilmente sotto:
+Il backend specifico del Portal appartiene a questo repository:
 
 ```txt
-public/newservices/services/portal/...
+ChristianGasso/portal
 ```
 
-URL pubblico corrispondente:
+Percorso sorgente:
 
 ```txt
-https://sangueprogestionale.it/newservices/services/portal/...
+backend/...
 ```
 
-Prima di modificare il backend deve essere letto anche:
+Percorso pubblico dopo il deploy:
 
 ```txt
-ChristianGasso/server-app/PROJECT_RULES.md
+/portal/api/...
 ```
+
+Il repository `ChristianGasso/server-app` resta il backend operativo del gestionale e non deve contenere i nuovi endpoint amministrativi del Portal, salvo decisione esplicita futura.
 
 ## Gestionale operativo
 
@@ -104,6 +139,8 @@ ChristianGasso/Gestionale
 ```
 
 Il Portal non deve essere utilizzato per le normali attività operative quotidiane di una singola AVIS.
+
+Gli operatori sono gestiti nel contesto della relativa AVIS e non come sezione globale indipendente.
 
 ## App donatori
 
@@ -149,15 +186,13 @@ Prima di creare o modificare file ChatGPT deve:
 
 ## Separazione delle responsabilità
 
-Questo repository contiene esclusivamente il frontend del Portal, salvo decisione esplicita contraria.
-
-Per il frontend Portal:
+Per frontend e backend Portal:
 
 ```txt
 ChristianGasso/portal
 ```
 
-Per il backend:
+Per il backend operativo del gestionale:
 
 ```txt
 ChristianGasso/server-app
@@ -189,4 +224,4 @@ può essere utilizzato esclusivamente in lettura e consultazione.
 - token amministrativi;
 - altri segreti infrastrutturali.
 
-I segreti devono essere gestiti tramite environment variables o sistemi dedicati di secret management.
+I segreti devono essere gestiti tramite environment variables, configurazione server fuori repository o sistemi dedicati di secret management.
