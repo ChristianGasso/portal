@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 const navigation = [
   { key: 'dashboard', label: 'Dashboard', icon: '⌂' },
   { key: 'avis', label: 'AVIS', icon: 'A' },
-  { key: 'operatori', label: 'Operatori', icon: 'O' },
   { key: 'donatori', label: 'App donatori', icon: 'D' },
   { key: 'configurazioni', label: 'Configurazioni', icon: '⚙' },
 ]
