@@ -1,0 +1,57 @@
+name: Deploy Portal su IONOS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: portal-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    name: Build e deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configura Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installa dipendenze
+        run: npm ci
+
+      - name: Esegui build
+        run: npm run build
+
+      - name: Installa client SFTP
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Pubblica build su IONOS
+        env:
+          IONOS_SFTP_HOST: ${{ secrets.IONOS_SFTP_HOST }}
+          IONOS_SFTP_USER: ${{ secrets.IONOS_SFTP_USER }}
+          IONOS_SFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
+          IONOS_SFTP_PORT: ${{ secrets.IONOS_SFTP_PORT }}
+        run: |
+          test -n "$IONOS_SFTP_HOST"
+          test -n "$IONOS_SFTP_USER"
+          test -n "$IONOS_SFTP_PASSWORD"
+          PORT="${IONOS_SFTP_PORT:-22}"
+          lftp -u "$IONOS_SFTP_USER","$IONOS_SFTP_PASSWORD" "sftp://$IONOS_SFTP_HOST:$PORT" <<'EOF'
+          set sftp:auto-confirm yes
+          set net:max-retries 2
+          set net:timeout 20
+          mirror --reverse --delete --verbose dist/ /
+          bye
+          EOF
