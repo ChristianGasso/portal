@@ -5,7 +5,9 @@ export default function AvisPage() {
         <div>
           <span className="section-kicker">STRUTTURA CENTRALE</span>
           <h2>AVIS e sedi</h2>
-          <p>Da qui gestiremo sedi, stato della piattaforma e link pubblici di registrazione.</p>
+          <p>
+            Da qui gestiremo ogni AVIS e tutto ciò che appartiene al suo gestionale, compresi operatori, ruoli, permessi e stato della sede.
+          </p>
         </div>
         <button type="button" className="primary-button">Nuova AVIS</button>
       </section>
@@ -14,7 +16,7 @@ export default function AvisPage() {
         <div className="empty-icon">A</div>
         <h3>Gestione AVIS pronta per i dati reali</h3>
         <p>
-          Il prossimo collegamento backend caricherà l’elenco delle AVIS e permetterà di gestire il token pubblico di registrazione per ogni sede.
+          Il prossimo collegamento backend caricherà l’elenco delle AVIS. Aprendo una singola AVIS potremo gestire i suoi operatori, ruoli, permessi, stato e configurazioni del gestionale.
         </p>
       </section>
     </div>
