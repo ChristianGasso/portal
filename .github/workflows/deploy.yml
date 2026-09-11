@@ -57,7 +57,7 @@ jobs:
           set sftp:auto-confirm yes
           set net:max-retries 2
           set net:timeout 20
-          mkdir -p public
-          mirror --reverse --delete --verbose dist/ /public/
+          mkdir -p /portal/public
+          mirror --reverse --delete --verbose dist/ /portal/public/
           bye
           EOF
