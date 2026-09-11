@@ -66,6 +66,22 @@ function portal_db(): PDO
     }
 }
 
+function portal_json_input(): array
+{
+    $raw = file_get_contents('php://input');
+    if (!is_string($raw) || trim($raw) === '') {
+        return [];
+    }
+
+    $input = json_decode($raw, true);
+
+    if (!is_array($input)) {
+        portal_error('Dati della richiesta non validi.', 400);
+    }
+
+    return $input;
+}
+
 function portal_b64u_dec(string $data): string|false
 {
     $data = strtr($data, '-_', '+/');
@@ -80,6 +96,61 @@ function portal_b64u_dec(string $data): string|false
 function portal_b64u(string $data): string
 {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+
+function portal_jwt_secret(): string
+{
+    $jwt = portal_config('jwt');
+    $secret = is_array($jwt) ? trim((string)($jwt['secret'] ?? '')) : '';
+
+    if ($secret === '') {
+        portal_error('Configurazione autenticazione Portal incompleta.', 500);
+    }
+
+    return $secret;
+}
+
+function portal_access_ttl(): int
+{
+    $jwt = portal_config('jwt');
+    $ttl = is_array($jwt) ? (int)($jwt['access_ttl'] ?? 3600) : 3600;
+
+    return max(300, min($ttl, 86400));
+}
+
+function portal_create_access_token(int $adminId): array
+{
+    if ($adminId <= 0) {
+        portal_error('Account amministratore non valido.', 500);
+    }
+
+    $now = time();
+    $expiresAt = $now + portal_access_ttl();
+
+    $header = [
+        'alg' => 'HS256',
+        'typ' => 'JWT',
+    ];
+
+    $payload = [
+        'typ' => 'portal_access',
+        'sub' => $adminId,
+        'iat' => $now,
+        'exp' => $expiresAt,
+        'jti' => bin2hex(random_bytes(16)),
+    ];
+
+    $headerPart = portal_b64u((string)json_encode($header, JSON_UNESCAPED_SLASHES));
+    $payloadPart = portal_b64u((string)json_encode($payload, JSON_UNESCAPED_SLASHES));
+    $signature = portal_b64u(
+        hash_hmac('sha256', $headerPart . '.' . $payloadPart, portal_jwt_secret(), true)
+    );
+
+    return [
+        'token' => $headerPart . '.' . $payloadPart . '.' . $signature,
+        'expires_at' => $expiresAt,
+        'expires_in' => $expiresAt - $now,
+    ];
 }
 
 function portal_bearer(): ?string
@@ -104,26 +175,32 @@ function portal_bearer(): ?string
 
 function portal_verify_access_token(string $token): ?array
 {
-    $jwt = portal_config('jwt');
-    $secret = is_array($jwt) ? trim((string)($jwt['secret'] ?? '')) : '';
-
-    if ($secret === '') {
-        portal_error('Configurazione autenticazione Portal incompleta.', 500);
-    }
-
     $parts = explode('.', $token);
     if (count($parts) !== 3) {
         return null;
     }
 
-    [$header, $body, $signature] = $parts;
-    $expected = portal_b64u(hash_hmac('sha256', $header . '.' . $body, $secret, true));
+    [$headerPart, $payloadPart, $signature] = $parts;
+
+    $decodedHeader = portal_b64u_dec($headerPart);
+    if ($decodedHeader === false) {
+        return null;
+    }
+
+    $header = json_decode($decodedHeader, true);
+    if (!is_array($header) || ($header['alg'] ?? '') !== 'HS256') {
+        return null;
+    }
+
+    $expected = portal_b64u(
+        hash_hmac('sha256', $headerPart . '.' . $payloadPart, portal_jwt_secret(), true)
+    );
 
     if (!hash_equals($expected, $signature)) {
         return null;
     }
 
-    $decoded = portal_b64u_dec($body);
+    $decoded = portal_b64u_dec($payloadPart);
     if ($decoded === false) {
         return null;
     }
