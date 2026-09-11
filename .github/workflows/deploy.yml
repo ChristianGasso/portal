@@ -57,6 +57,7 @@ jobs:
           set sftp:auto-confirm yes
           set net:max-retries 2
           set net:timeout 20
-          mirror --reverse --delete --verbose --exclude-glob api/config/local.php dist/ /
+          mkdir -p public
+          mirror --reverse --delete --verbose dist/ /public/
           bye
           EOF
