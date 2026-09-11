@@ -7,7 +7,13 @@ const navigation = [
   { key: 'configurazioni', label: 'Configurazioni', icon: '⚙' },
 ]
 
-export default function PortalLayout({ activePage, onNavigate, children }) {
+function getInitials(user) {
+  const first = (user?.nome || '').trim().charAt(0)
+  const last = (user?.cognome || '').trim().charAt(0)
+  return `${first}${last}`.toUpperCase() || 'AD'
+}
+
+export default function PortalLayout({ activePage, onNavigate, user, onLogout, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const current = useMemo(
     () => navigation.find((item) => item.key === activePage) ?? navigation[0],
@@ -17,6 +23,8 @@ export default function PortalLayout({ activePage, onNavigate, children }) {
   useEffect(() => {
     setMobileOpen(false)
   }, [activePage])
+
+  const displayName = [user?.nome, user?.cognome].filter(Boolean).join(' ') || 'Amministratore'
 
   return (
     <div className="portal-app">
@@ -44,10 +52,13 @@ export default function PortalLayout({ activePage, onNavigate, children }) {
         </nav>
 
         <div className="portal-sidebar-footer">
-          <div className="portal-admin-avatar">CG</div>
-          <div>
-            <strong>Amministratore</strong>
-            <span>Accesso centrale</span>
+          <div className="portal-admin-avatar">{getInitials(user)}</div>
+          <div className="portal-sidebar-user">
+            <strong>{displayName}</strong>
+            <span>{user?.email || 'Accesso centrale'}</span>
+            <button type="button" className="portal-logout-button" onClick={onLogout}>
+              Esci
+            </button>
           </div>
         </div>
       </aside>
