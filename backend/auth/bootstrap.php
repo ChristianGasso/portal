@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-$config = require __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/bootstrap.php';
 
 function portal_config(string $key): mixed
 {
-    global $config;
+    $config = portal_private_config();
     return $config[$key] ?? null;
 }
 
@@ -28,7 +28,8 @@ function portal_error(string $message, int $status): never
 function portal_cors(): void
 {
     $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
-    $allowed = portal_config('allowed_origins');
+    $cors = portal_config('cors');
+    $allowed = is_array($cors) ? ($cors['allowed_origins'] ?? []) : [];
     $allowed = is_array($allowed) ? $allowed : [];
 
     if ($origin !== '' && in_array($origin, $allowed, true)) {
@@ -58,41 +59,11 @@ function portal_boot(string $method): void
 
 function portal_db(): PDO
 {
-    static $pdo = null;
-    if ($pdo instanceof PDO) {
-        return $pdo;
-    }
-
-    $db = portal_config('db');
-    $db = is_array($db) ? $db : [];
-
-    $host = trim((string)($db['host'] ?? ''));
-    $port = (int)($db['port'] ?? 3306);
-    $name = trim((string)($db['name'] ?? ''));
-    $charset = trim((string)($db['charset'] ?? 'utf8mb4'));
-    $user = trim((string)($db['user'] ?? ''));
-    $pass = (string)($db['pass'] ?? '');
-
-    if ($host === '' || $name === '' || $user === '') {
-        portal_error('Configurazione database Portal incompleta.', 500);
-    }
-
     try {
-        $pdo = new PDO(
-            sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $name, $charset),
-            $user,
-            $pass,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ]
-        );
+        return portal_config_db();
     } catch (Throwable) {
         portal_error('Connessione al database non disponibile.', 500);
     }
-
-    return $pdo;
 }
 
 function portal_b64u_dec(string $data): string|false
@@ -102,6 +73,7 @@ function portal_b64u_dec(string $data): string|false
     if ($pad > 0) {
         $data .= str_repeat('=', 4 - $pad);
     }
+
     return base64_decode($data, true);
 }
 
@@ -132,7 +104,9 @@ function portal_bearer(): ?string
 
 function portal_verify_access_token(string $token): ?array
 {
-    $secret = trim((string)(portal_config('app_access_token_secret') ?? ''));
+    $jwt = portal_config('jwt');
+    $secret = is_array($jwt) ? trim((string)($jwt['secret'] ?? '')) : '';
+
     if ($secret === '') {
         portal_error('Configurazione autenticazione Portal incompleta.', 500);
     }
@@ -144,6 +118,7 @@ function portal_verify_access_token(string $token): ?array
 
     [$header, $body, $signature] = $parts;
     $expected = portal_b64u(hash_hmac('sha256', $header . '.' . $body, $secret, true));
+
     if (!hash_equals($expected, $signature)) {
         return null;
     }
@@ -158,7 +133,7 @@ function portal_verify_access_token(string $token): ?array
         return null;
     }
 
-    if (($payload['typ'] ?? '') !== 'app_access') {
+    if (($payload['typ'] ?? '') !== 'portal_access') {
         return null;
     }
 
@@ -166,7 +141,8 @@ function portal_verify_access_token(string $token): ?array
         return null;
     }
 
-    $userId = (int)($payload['sub'] ?? $payload['id'] ?? 0);
+    $userId = (int)($payload['sub'] ?? 0);
+
     return $userId > 0 ? $payload : null;
 }
 
@@ -178,35 +154,30 @@ function portal_load_admin(int $userId): ?array
 
     try {
         $stmt = portal_db()->prepare(
-            'SELECT id, nome, cognome, email, codice_sede, stato_account, ruolo
-             FROM utente
+            'SELECT id, nome, cognome, email, stato
+             FROM portal_admin
              WHERE id = :id
              LIMIT 1'
         );
         $stmt->execute([':id' => $userId]);
-        $user = $stmt->fetch();
+        $admin = $stmt->fetch();
     } catch (Throwable) {
         portal_error('Impossibile verificare l’account amministratore.', 500);
     }
 
-    if (!is_array($user)) {
+    if (!is_array($admin)) {
         return null;
     }
 
-    if (strcasecmp(trim((string)($user['stato_account'] ?? '')), 'Attivo') !== 0) {
+    if (strcasecmp(trim((string)($admin['stato'] ?? '')), 'attivo') !== 0) {
         return null;
-    }
-
-    if (strcasecmp(trim((string)($user['ruolo'] ?? '')), 'admin') !== 0) {
-        portal_error('Accesso riservato agli amministratori.', 403);
     }
 
     return [
-        'id' => (int)$user['id'],
-        'nome' => (string)($user['nome'] ?? ''),
-        'cognome' => (string)($user['cognome'] ?? ''),
-        'email' => (string)($user['email'] ?? ''),
-        'codice_sede' => (string)($user['codice_sede'] ?? ''),
+        'id' => (int)$admin['id'],
+        'nome' => (string)($admin['nome'] ?? ''),
+        'cognome' => (string)($admin['cognome'] ?? ''),
+        'email' => (string)($admin['email'] ?? ''),
         'ruolo' => 'admin',
     ];
 }
@@ -215,16 +186,15 @@ function portal_require_admin(): array
 {
     $token = portal_bearer();
     if (!$token) {
-        portal_error('Token applicativo mancante.', 401);
+        portal_error('Token Portal mancante.', 401);
     }
 
     $payload = portal_verify_access_token($token);
     if (!$payload) {
-        portal_error('Token applicativo non valido o scaduto.', 401);
+        portal_error('Token Portal non valido o scaduto.', 401);
     }
 
-    $userId = (int)($payload['sub'] ?? $payload['id'] ?? 0);
-    $admin = portal_load_admin($userId);
+    $admin = portal_load_admin((int)$payload['sub']);
     if (!$admin) {
         portal_error('Account amministratore non attivo o non disponibile.', 401);
     }
