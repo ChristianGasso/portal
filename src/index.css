@@ -526,3 +526,155 @@ button {
     border-radius: 18px;
   }
 }
+
+
+.portal-login-shell,
+.portal-auth-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.portal-login-shell {
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 30%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+}
+
+.portal-login-card {
+  width: min(100%, 460px);
+  padding: 34px;
+  border: 1px solid #dce6f2;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.1);
+}
+
+.portal-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 34px;
+}
+
+.portal-login-brand strong,
+.portal-login-brand span {
+  display: block;
+}
+
+.portal-login-brand span {
+  margin-top: 3px;
+  color: #7b8ba7;
+  font-size: 0.82rem;
+}
+
+.portal-login-heading h1 {
+  margin: 8px 0 10px;
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+}
+
+.portal-login-heading p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.portal-login-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.portal-login-form label {
+  display: grid;
+  gap: 8px;
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.portal-login-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #d5deea;
+  border-radius: 14px;
+  outline: none;
+  background: #fff;
+  color: #0f172a;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.portal-login-form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.portal-login-form input:disabled,
+.portal-login-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.portal-login-error {
+  padding: 12px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.portal-login-submit {
+  width: 100%;
+  min-height: 48px;
+}
+
+.portal-auth-loading-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+}
+
+.portal-sidebar-user {
+  min-width: 0;
+  flex: 1;
+}
+
+.portal-sidebar-user strong,
+.portal-sidebar-user span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portal-logout-button {
+  margin-top: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #c8d4ea;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.portal-logout-button:hover {
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .portal-login-card {
+    padding: 26px 22px;
+    border-radius: 22px;
+  }
+}
