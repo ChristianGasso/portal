@@ -31,10 +31,48 @@ function flag(source, keys, fallback = false) {
   return ['1', 'true', 'si', 'sì', 'attivo', 'attiva'].includes(normalized)
 }
 
+function isStorageLimit(key) {
+  const normalized = String(key).toLowerCase()
+  return normalized.includes('spazio') || normalized.includes('storage')
+}
+
+function storageValueToGb(key, value) {
+  if (value === '' || value === null || value === undefined || !isStorageLimit(key)) return value
+
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return value
+
+  const normalized = String(key).toLowerCase()
+  if (normalized.includes('byte')) return numeric / (1024 ** 3)
+  if (normalized.endsWith('_mb') || normalized.includes('megabyte')) return numeric / 1024
+  return numeric
+}
+
+function storageValueFromGb(key, value) {
+  if (value === '' || value === null || value === undefined || !isStorageLimit(key)) return value
+
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return value
+
+  const normalized = String(key).toLowerCase()
+  if (normalized.includes('byte')) return Math.round(numeric * (1024 ** 3))
+  if (normalized.endsWith('_mb') || normalized.includes('megabyte')) return numeric * 1024
+  return numeric
+}
+
 function readableLabel(key) {
-  return key
+  const normalizedKey = isStorageLimit(key)
+    ? key
+        .replace(/_bytes?$/i, '')
+        .replace(/_mb$/i, '')
+        .replace(/_gb$/i, '')
+    : key
+
+  const label = normalizedKey
     .replaceAll('_', ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
+
+  return isStorageLimit(key) ? `${label} (GB)` : label
 }
 
 function PortalToast({ toast, onClose }) {
@@ -110,7 +148,9 @@ export default function AvisDetailPage({ idAvis, onBack }) {
 
       setLimitsForm(
         Object.fromEntries(
-          Object.entries(limiti).filter(([key]) => !hiddenLimitKeys.has(key)),
+          Object.entries(limiti)
+            .filter(([key]) => !hiddenLimitKeys.has(key))
+            .map(([key, value]) => [key, storageValueToGb(key, value)]),
         ),
       )
     } catch (requestError) {
@@ -166,7 +206,10 @@ export default function AvisDetailPage({ idAvis, onBack }) {
     if (saving) return
     setSaving(true)
     try {
-      const result = await aggiornaLimitiAvis(idAvis, limitsForm)
+      const payload = Object.fromEntries(
+        Object.entries(limitsForm).map(([key, value]) => [key, storageValueFromGb(key, value)]),
+      )
+      const result = await aggiornaLimitiAvis(idAvis, payload)
       await loadDetail()
       setToast({ tone: 'success', message: result.message || 'Limiti AVIS aggiornati correttamente.' })
     } catch (requestError) {
@@ -328,7 +371,7 @@ export default function AvisDetailPage({ idAvis, onBack }) {
                   <input
                     type="number"
                     min="0"
-                    step="any"
+                    step={isStorageLimit(key) ? '0.1' : 'any'}
                     value={value ?? ''}
                     onChange={(event) => setLimitsForm((current) => ({ ...current, [key]: event.target.value }))}
                     disabled={saving}
