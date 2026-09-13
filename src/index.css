@@ -1678,3 +1678,353 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Questionario - workspace completo */
+.questionnaire-subtabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 22px;
+  padding: 7px;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  background: #f1f5f9;
+}
+
+.questionnaire-subtabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.questionnaire-subtabs button:hover {
+  background: rgba(255, 255, 255, 0.72);
+  color: #334155;
+}
+
+.questionnaire-subtabs button.is-active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.questionnaire-pdf-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+  gap: 22px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.questionnaire-pdf-preview {
+  min-height: 640px;
+  overflow: hidden;
+  border: 1px solid #dbe5f4;
+  border-radius: 18px;
+  background: #eef2f7;
+}
+
+.questionnaire-pdf-preview > object {
+  width: 100%;
+  height: 720px;
+  display: block;
+  border: 0;
+  background: #fff;
+}
+
+.questionnaire-empty.compact {
+  min-height: 300px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.questionnaire-pdf-actions {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fbfdff;
+}
+
+.questionnaire-pdf-actions h4 {
+  margin: 0;
+}
+
+.questionnaire-pdf-actions p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.questionnaire-file-button {
+  position: relative;
+  width: fit-content;
+  overflow: hidden;
+}
+
+.questionnaire-file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.questionnaire-layout-editor {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.questionnaire-layout-toolbar {
+  display: grid;
+  grid-template-columns: 110px minmax(220px, 1fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.portal-field.compact input {
+  min-width: 0;
+}
+
+.layout-key-field {
+  min-width: 0;
+}
+
+.questionnaire-layout-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.5fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.pdf-layout-stage {
+  position: relative;
+  width: min(100%, 840px);
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  background: #e5e7eb;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+}
+
+.pdf-layout-stage > object {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.pdf-layout-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #64748b;
+  font-weight: 800;
+  text-align: center;
+}
+
+.pdf-layout-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.pdf-layout-field {
+  position: absolute;
+  z-index: 4;
+  display: block;
+  min-width: 24px;
+  min-height: 18px;
+  overflow: hidden;
+  padding: 2px 5px;
+  border: 1px solid rgba(37, 99, 235, 0.75);
+  border-radius: 4px;
+  background: rgba(219, 234, 254, 0.78);
+  color: #1e40af;
+  font-size: 0.64rem;
+  font-weight: 850;
+  line-height: 1.1;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.pdf-layout-field:active {
+  cursor: grabbing;
+}
+
+.pdf-layout-field.is-selected {
+  border: 2px solid #dc2626;
+  background: rgba(254, 226, 226, 0.84);
+  color: #991b1b;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
+}
+
+.layout-field-editor {
+  position: sticky;
+  top: 112px;
+  display: grid;
+  gap: 16px;
+  padding: 19px;
+  border: 1px solid #dbe5f4;
+  border-radius: 18px;
+  background: #fbfdff;
+}
+
+.layout-coordinate-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef4ff;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.questionnaire-import-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 20px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.questionnaire-import-card,
+.questionnaire-danger-card {
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fbfdff;
+}
+
+.questionnaire-import-card h4,
+.questionnaire-danger-card h4 {
+  margin: 7px 0 8px;
+}
+
+.questionnaire-import-card p,
+.questionnaire-danger-card p {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.questionnaire-query {
+  width: 100%;
+  min-height: 340px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+}
+
+.questionnaire-query:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.questionnaire-danger-card {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.section-kicker.danger {
+  color: #b91c1c;
+}
+
+.questionnaire-reset-confirm {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.questionnaire-reset-confirm > strong {
+  color: #991b1b;
+}
+
+.questionnaire-reset-confirm > span {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.questionnaire-reset-confirm > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 1180px) {
+  .questionnaire-pdf-grid,
+  .questionnaire-layout-workspace,
+  .questionnaire-import-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .layout-field-editor {
+    position: static;
+  }
+
+  .pdf-layout-stage {
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 860px) {
+  .questionnaire-subtabs,
+  .questionnaire-layout-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .questionnaire-layout-toolbar .primary-button,
+  .questionnaire-layout-toolbar .secondary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .questionnaire-subtabs,
+  .questionnaire-layout-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .questionnaire-pdf-preview {
+    min-height: 440px;
+  }
+
+  .questionnaire-pdf-preview > object {
+    height: 520px;
+  }
+
+  .pdf-layout-stage {
+    border-radius: 10px;
+  }
+}
