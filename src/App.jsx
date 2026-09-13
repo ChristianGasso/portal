@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import PortalLayout from './components/PortalLayout'
 import DashboardPage from './pages/DashboardPage'
 import AvisPage from './pages/AvisPage'
+import AvisDetailPage from './pages/AvisDetailPage'
 import DonatoriPage from './pages/DonatoriPage'
 import ConfigurazioniPage from './pages/ConfigurazioniPage'
 import LoginPage from './pages/LoginPage'
@@ -9,13 +10,20 @@ import { getPortalSession, loginPortal, logoutPortal } from './auth/portalAuth'
 
 const validPages = new Set(['dashboard', 'avis', 'donatori', 'configurazioni'])
 
-function getPageFromHash() {
+function getRouteFromHash() {
   const raw = window.location.hash.replace(/^#\/?/, '')
-  return validPages.has(raw) ? raw : 'dashboard'
+  const parts = raw.split('/').filter(Boolean)
+
+  if (parts[0] === 'avis' && /^\d+$/.test(parts[1] || '')) {
+    return { page: 'avis', avisId: Number(parts[1]) }
+  }
+
+  const page = validPages.has(parts[0]) ? parts[0] : 'dashboard'
+  return { page, avisId: null }
 }
 
 export default function App() {
-  const [activePage, setActivePage] = useState(getPageFromHash)
+  const [route, setRoute] = useState(getRouteFromHash)
   const [user, setUser] = useState(null)
   const [checkingSession, setCheckingSession] = useState(true)
   const [loginLoading, setLoginLoading] = useState(false)
@@ -42,7 +50,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const handleHashChange = () => setActivePage(getPageFromHash())
+    const handleHashChange = () => setRoute(getRouteFromHash())
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
@@ -50,7 +58,14 @@ export default function App() {
   function navigate(page) {
     if (!validPages.has(page)) return
     window.location.hash = page === 'dashboard' ? '#/' : `#/${page}`
-    setActivePage(page)
+    setRoute({ page, avisId: null })
+  }
+
+  function openAvis(idAvis) {
+    const id = Number(idAvis)
+    if (!Number.isInteger(id) || id <= 0) return
+    window.location.hash = `#/avis/${id}`
+    setRoute({ page: 'avis', avisId: id })
   }
 
   async function handleLogin(email, password) {
@@ -60,7 +75,7 @@ export default function App() {
       const data = await loginPortal(email, password)
       setUser(data.user)
       window.location.hash = '#/'
-      setActivePage('dashboard')
+      setRoute({ page: 'dashboard', avisId: null })
     } finally {
       setLoginLoading(false)
     }
@@ -70,7 +85,7 @@ export default function App() {
     await logoutPortal()
     setUser(null)
     window.location.hash = '#/'
-    setActivePage('dashboard')
+    setRoute({ page: 'dashboard', avisId: null })
   }
 
   if (checkingSession) {
@@ -89,13 +104,17 @@ export default function App() {
   }
 
   let pageContent = <DashboardPage onNavigate={navigate} />
-  if (activePage === 'avis') pageContent = <AvisPage />
-  if (activePage === 'donatori') pageContent = <DonatoriPage />
-  if (activePage === 'configurazioni') pageContent = <ConfigurazioniPage />
+  if (route.page === 'avis' && route.avisId) {
+    pageContent = <AvisDetailPage idAvis={route.avisId} onBack={() => navigate('avis')} />
+  } else if (route.page === 'avis') {
+    pageContent = <AvisPage onOpenAvis={openAvis} />
+  }
+  if (route.page === 'donatori') pageContent = <DonatoriPage />
+  if (route.page === 'configurazioni') pageContent = <ConfigurazioniPage />
 
   return (
     <PortalLayout
-      activePage={activePage}
+      activePage={route.page}
       onNavigate={navigate}
       user={user}
       onLogout={handleLogout}
