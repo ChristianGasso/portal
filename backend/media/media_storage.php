@@ -39,8 +39,26 @@ function portal_media_logo_url(string $codiceSede): string
 function portal_media_local_root(): ?string
 {
     $config = portal_media_config();
-    $root = trim((string)($config['local_root'] ?? ''));
-    return $root !== '' ? rtrim($root, '/\\') : null;
+
+    // Se configurato esplicitamente fuori dal repository, usa sempre quel percorso.
+    $configured = trim((string)($config['local_root'] ?? ''));
+    if ($configured !== '') {
+        return rtrim($configured, '/\\');
+    }
+
+    /*
+     * Il Portal e l'archivio media vivono sullo stesso account IONOS:
+     *
+     * /portal/public/api/media/media_storage.php
+     * /Gestionale-Avis/media
+     *
+     * Risaliamo quindi alla radice dell'account senza accettare alcun
+     * percorso dal client e usiamo esclusivamente la directory media nota.
+     */
+    $accountRoot = dirname(__DIR__, 4);
+    $mediaRoot = $accountRoot . '/Gestionale-Avis/media';
+
+    return is_dir($mediaRoot) ? $mediaRoot : null;
 }
 
 function portal_media_use_local(): bool
