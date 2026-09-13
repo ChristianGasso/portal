@@ -678,3 +678,336 @@ button {
     border-radius: 22px;
   }
 }
+
+
+/* Gestione AVIS */
+.avis-summary {
+  flex: 0 0 auto;
+  min-width: 150px;
+  padding: 18px 20px;
+  border: 1px solid #dbe5f4;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  text-align: right;
+}
+
+.avis-summary strong,
+.avis-summary span,
+.avis-summary small {
+  display: block;
+}
+
+.avis-summary strong {
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+}
+
+.avis-summary span {
+  margin-top: 2px;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.avis-summary small {
+  margin-top: 6px;
+  color: #64748b;
+}
+
+.avis-state-card {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.avis-state-card.is-error {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.avis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.avis-card {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 24px;
+  border: 1px solid #e1e7f0;
+  border-radius: 22px;
+  background: #fff;
+  color: #0f172a;
+  text-align: left;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.avis-card:hover {
+  transform: translateY(-2px);
+  border-color: #bfdbfe;
+  box-shadow: 0 18px 34px rgba(37, 99, 235, 0.09);
+}
+
+.avis-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.avis-card-mark {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #eaf2ff;
+  color: #2563eb;
+  font-weight: 900;
+}
+
+.avis-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.avis-status.is-active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.avis-status.is-suspended {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.avis-status.large {
+  min-height: 36px;
+  padding: 0 14px;
+}
+
+.avis-card h3 {
+  margin: 8px 0 8px;
+  font-size: 1.18rem;
+}
+
+.avis-card p,
+.muted-copy {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.avis-card-link {
+  color: #2563eb;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.text-button {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 800;
+}
+
+.avis-detail-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 30px;
+  border: 1px solid #dbe5f4;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.045);
+}
+
+.avis-detail-hero h2 {
+  margin: 8px 0 10px;
+  font-size: clamp(1.7rem, 3vw, 2.7rem);
+  letter-spacing: -0.04em;
+}
+
+.avis-detail-hero p {
+  margin: 0;
+  color: #64748b;
+}
+
+.avis-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e1e7f0;
+  border-radius: 18px;
+  background: #eef3f8;
+}
+
+.avis-tabs button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.avis-tabs button:hover {
+  background: rgba(255, 255, 255, 0.7);
+  color: #334155;
+}
+
+.avis-tabs button.is-active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+}
+
+.avis-detail-panel {
+  min-height: 320px;
+}
+
+.avis-detail-list {
+  display: grid;
+  gap: 0;
+  margin-top: 22px;
+  border-top: 1px solid #e8edf4;
+}
+
+.avis-detail-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.avis-detail-row span {
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.avis-detail-row strong {
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.service-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.service-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.service-status-card span,
+.service-status-card strong {
+  display: block;
+}
+
+.service-status-card > div > span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.service-status-card > div > strong {
+  margin-top: 4px;
+}
+
+.service-indicator {
+  min-width: 44px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.service-indicator.is-on {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.service-indicator.is-off {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.avis-database-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 1120px) {
+  .avis-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .service-status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .avis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .avis-detail-hero {
+    flex-direction: column;
+    padding: 24px;
+  }
+
+  .avis-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .avis-detail-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .avis-database-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .avis-summary {
+    width: 100%;
+    text-align: left;
+  }
+}
