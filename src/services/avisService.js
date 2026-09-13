@@ -1,6 +1,6 @@
 import { getPortalToken } from '../auth/portalAuth'
 
-async function portalRequest(path) {
+async function portalRequest(path, options = {}) {
   const token = getPortalToken()
 
   if (!token) {
@@ -8,8 +8,11 @@ async function portalRequest(path) {
   }
 
   const response = await fetch(path, {
+    ...options,
     headers: {
       Authorization: `Bearer ${token}`,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {}),
     },
   })
 
@@ -39,4 +42,26 @@ export async function caricaDettaglioAvis(idAvis) {
   }
 
   return portalRequest(`/api/avis/dettaglio.php?id=${encodeURIComponent(id)}`)
+}
+
+
+export async function aggiornaGeneraleAvis(idAvis, payload) {
+  return portalRequest('/api/avis/aggiorna-generale.php', {
+    method: 'POST',
+    body: JSON.stringify({ id_avis: Number(idAvis), ...payload }),
+  })
+}
+
+export async function aggiornaServiziAvis(idAvis, payload) {
+  return portalRequest('/api/avis/aggiorna-servizi.php', {
+    method: 'POST',
+    body: JSON.stringify({ id_avis: Number(idAvis), ...payload }),
+  })
+}
+
+export async function aggiornaLimitiAvis(idAvis, limiti) {
+  return portalRequest('/api/avis/aggiorna-limiti.php', {
+    method: 'POST',
+    body: JSON.stringify({ id_avis: Number(idAvis), limiti }),
+  })
 }
