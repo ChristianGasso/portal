@@ -3,7 +3,9 @@ import {
   aggiornaGeneraleAvis,
   aggiornaLimitiAvis,
   aggiornaServiziAvis,
+  aggiornaDomandaQuestionarioAvis,
   caricaDettaglioAvis,
+  caricaQuestionarioAvis,
   gestisciLogoAvis,
 } from '../services/avisService'
 
@@ -123,6 +125,11 @@ export default function AvisDetailPage({ idAvis, onBack }) {
   const [logoLoading, setLogoLoading] = useState(false)
   const [logoSaving, setLogoSaving] = useState(false)
   const [logoDeleteConfirm, setLogoDeleteConfirm] = useState(false)
+  const [questionario, setQuestionario] = useState([])
+  const [questionarioLoading, setQuestionarioLoading] = useState(false)
+  const [questionarioSaving, setQuestionarioSaving] = useState(false)
+  const [selectedQuestionId, setSelectedQuestionId] = useState(null)
+  const [questionDraft, setQuestionDraft] = useState(null)
 
   async function loadDetail() {
     setLoading(true)
@@ -174,6 +181,10 @@ export default function AvisDetailPage({ idAvis, onBack }) {
     if (activeTab === 'logo') {
       void loadLogo()
     }
+
+    if (activeTab === 'questionario') {
+      void loadQuestionario()
+    }
   }, [activeTab, idAvis])
 
   const avis = detail?.avis || {}
@@ -181,7 +192,78 @@ export default function AvisDetailPage({ idAvis, onBack }) {
   const name = String(firstValue(avis, ['nome', 'denominazione', 'ragione_sociale'], 'AVIS')).trim()
   const code = String(firstValue(avis, ['codice', 'codice_avis', 'codice_sede'], '')).trim()
   const avisEnabled = useMemo(() => generalForm.attiva, [generalForm.attiva])
+  const questionSections = useMemo(() => {
+    const groups = new Map()
 
+    for (const question of questionario) {
+      const key = question.sezione_codice || 'senza_sezione'
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          title: question.sezione_titolo || 'Senza sezione',
+          description: question.sezione_descrizione || '',
+          order: Number(question.ordine_sezione || 0),
+          questions: [],
+        })
+      }
+      groups.get(key).questions.push(question)
+    }
+
+    return Array.from(groups.values()).sort((a, b) => a.order - b.order)
+  }, [questionario])
+
+
+  async function loadQuestionario() {
+    setQuestionarioLoading(true)
+
+    try {
+      const result = await caricaQuestionarioAvis(idAvis)
+      const domande = Array.isArray(result?.domande) ? result.domande : []
+      setQuestionario(domande)
+
+      if (selectedQuestionId) {
+        const updated = domande.find((item) => item.id === selectedQuestionId) || null
+        setQuestionDraft(updated ? { ...updated } : null)
+        if (!updated) setSelectedQuestionId(null)
+      }
+    } catch (requestError) {
+      setQuestionario([])
+      setQuestionDraft(null)
+      setSelectedQuestionId(null)
+      setToast({
+        tone: 'error',
+        message: requestError.message || 'Non è stato possibile caricare il questionario.',
+      })
+    } finally {
+      setQuestionarioLoading(false)
+    }
+  }
+
+  function selectQuestion(question) {
+    setSelectedQuestionId(question.id)
+    setQuestionDraft({ ...question })
+  }
+
+  async function saveQuestion() {
+    if (!questionDraft || questionarioSaving) return
+
+    setQuestionarioSaving(true)
+    try {
+      const result = await aggiornaDomandaQuestionarioAvis(idAvis, questionDraft)
+      await loadQuestionario()
+      setToast({
+        tone: 'success',
+        message: result.message || 'Domanda aggiornata correttamente.',
+      })
+    } catch (requestError) {
+      setToast({
+        tone: 'error',
+        message: requestError.message || 'Non è stato possibile aggiornare la domanda.',
+      })
+    } finally {
+      setQuestionarioSaving(false)
+    }
+  }
 
   async function loadLogo() {
     setLogoLoading(true)
@@ -523,14 +605,210 @@ export default function AvisDetailPage({ idAvis, onBack }) {
       ) : null}
 
       {activeTab === 'questionario' ? (
-        <section className="panel-card avis-detail-panel">
+        <section className="panel-card avis-detail-panel questionnaire-panel">
           <div className="portal-form-heading">
             <div>
               <span className="section-kicker">QUESTIONARIO</span>
               <h3>Configurazione questionario</h3>
-              <p>La gestione delle domande verrà collegata al database operativo della AVIS nel prossimo passaggio.</p>
+              <p>
+                Le domande vengono lette direttamente dal database operativo della AVIS.
+                Seleziona una domanda per modificarne testo e comportamento.
+              </p>
+            </div>
+            <div className="questionnaire-summary">
+              <strong>{questionario.length}</strong>
+              <span>domande</span>
             </div>
           </div>
+
+          {questionarioLoading ? (
+            <div className="questionnaire-loading">Caricamento questionario…</div>
+          ) : questionSections.length === 0 ? (
+            <div className="questionnaire-empty">
+              <strong>Nessuna domanda disponibile</strong>
+              <span>Verifica il collegamento al database operativo della AVIS.</span>
+            </div>
+          ) : (
+            <div className="questionnaire-layout">
+              <div className="questionnaire-sections">
+                {questionSections.map((section) => (
+                  <section className="questionnaire-section" key={section.key}>
+                    <header>
+                      <div>
+                        <span className="section-kicker">SEZIONE {section.order}</span>
+                        <h4>{section.title}</h4>
+                        {section.description ? <p>{section.description}</p> : null}
+                      </div>
+                      <span className="questionnaire-section-count">{section.questions.length}</span>
+                    </header>
+
+                    <div className="questionnaire-question-list">
+                      {section.questions.map((question) => (
+                        <button
+                          type="button"
+                          key={question.id}
+                          className={`questionnaire-question ${selectedQuestionId === question.id ? 'is-selected' : ''}`}
+                          onClick={() => selectQuestion(question)}
+                        >
+                          <div className="questionnaire-question-order">{question.ordine_domanda}</div>
+                          <div className="questionnaire-question-copy">
+                            <strong>{question.testo}</strong>
+                            <span>{question.codice} · pagina {question.pagina_compilazione}</span>
+                          </div>
+                          <span className={`questionnaire-active-dot ${question.attiva ? 'is-on' : 'is-off'}`}>
+                            {question.attiva ? 'Attiva' : 'Disattiva'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+
+              <aside className="questionnaire-editor">
+                {questionDraft ? (
+                  <>
+                    <div className="questionnaire-editor-heading">
+                      <div>
+                        <span className="section-kicker">{questionDraft.codice}</span>
+                        <h4>Modifica domanda</h4>
+                      </div>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        disabled={questionarioSaving || !questionDraft.testo?.trim()}
+                        onClick={() => void saveQuestion()}
+                      >
+                        {questionarioSaving ? 'Salvataggio…' : 'Salva'}
+                      </button>
+                    </div>
+
+                    <label className="portal-field">
+                      <span>Testo domanda</span>
+                      <textarea
+                        rows="5"
+                        value={questionDraft.testo || ''}
+                        onChange={(event) => setQuestionDraft((current) => ({ ...current, testo: event.target.value }))}
+                        disabled={questionarioSaving}
+                      />
+                    </label>
+
+                    <div className="questionnaire-editor-grid">
+                      <label className="portal-field">
+                        <span>Pagina compilazione</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={questionDraft.pagina_compilazione ?? 1}
+                          onChange={(event) => setQuestionDraft((current) => ({
+                            ...current,
+                            pagina_compilazione: event.target.value,
+                          }))}
+                          disabled={questionarioSaving}
+                        />
+                      </label>
+
+                      <label className="portal-field">
+                        <span>Ordine domanda</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={questionDraft.ordine_domanda ?? 0}
+                          onChange={(event) => setQuestionDraft((current) => ({
+                            ...current,
+                            ordine_domanda: event.target.value,
+                          }))}
+                          disabled={questionarioSaving}
+                        />
+                      </label>
+
+                      <label className="portal-field">
+                        <span>Tipo risposta</span>
+                        <input
+                          type="text"
+                          value={questionDraft.tipo_risposta || ''}
+                          onChange={(event) => setQuestionDraft((current) => ({
+                            ...current,
+                            tipo_risposta: event.target.value.toUpperCase(),
+                          }))}
+                          disabled={questionarioSaving}
+                        />
+                      </label>
+
+                      <label className="portal-field">
+                        <span>Dettaglio quando</span>
+                        <select
+                          value={questionDraft.dettaglio_quando || ''}
+                          onChange={(event) => setQuestionDraft((current) => ({
+                            ...current,
+                            dettaglio_quando: event.target.value || null,
+                          }))}
+                          disabled={questionarioSaving}
+                        >
+                          <option value="">Nessun dettaglio</option>
+                          <option value="SI">Quando risponde Sì</option>
+                          <option value="NO">Quando risponde No</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <label className="portal-field">
+                      <span>Etichetta dettaglio</span>
+                      <input
+                        type="text"
+                        value={questionDraft.etichetta_dettaglio || ''}
+                        onChange={(event) => setQuestionDraft((current) => ({
+                          ...current,
+                          etichetta_dettaglio: event.target.value,
+                        }))}
+                        disabled={questionarioSaving}
+                      />
+                    </label>
+
+                    <div className="questionnaire-toggle-list">
+                      <ToggleCard
+                        label="Domanda attiva"
+                        description="Se disattivata non verrà mostrata nel questionario."
+                        checked={Boolean(questionDraft.attiva)}
+                        onChange={(value) => setQuestionDraft((current) => ({ ...current, attiva: value }))}
+                        disabled={questionarioSaving}
+                      />
+                      <ToggleCard
+                        label="Obbligatoria"
+                        description="La compilazione richiede una risposta prima di procedere."
+                        checked={Boolean(questionDraft.obbligatoria)}
+                        onChange={(value) => setQuestionDraft((current) => ({ ...current, obbligatoria: value }))}
+                        disabled={questionarioSaving}
+                      />
+                      <ToggleCard
+                        label="Solo donne"
+                        description="La domanda viene proposta esclusivamente alle donatrici."
+                        checked={Boolean(questionDraft.solo_donne)}
+                        onChange={(value) => setQuestionDraft((current) => ({ ...current, solo_donne: value }))}
+                        disabled={questionarioSaving}
+                      />
+                    </div>
+
+                    {Array.isArray(questionDraft.opzioni) && questionDraft.opzioni.length > 0 ? (
+                      <div className="questionnaire-options">
+                        <span>Risposte configurate</span>
+                        <div>
+                          {questionDraft.opzioni.map((option) => (
+                            <strong key={option}>{option}</strong>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="questionnaire-editor-empty">
+                    <strong>Seleziona una domanda</strong>
+                    <span>Il pannello di modifica comparirà qui.</span>
+                  </div>
+                )}
+              </aside>
+            </div>
+          )}
         </section>
       ) : null}
 
