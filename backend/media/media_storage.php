@@ -259,3 +259,121 @@ function portal_media_convert_image_to_webp(string $encoded): string
 
     return $webp;
 }
+
+
+function portal_media_questionario_pdf_relative_path(string $codiceSede): string
+{
+    $config = portal_media_config();
+    $paths = is_array($config['paths'] ?? null) ? $config['paths'] : [];
+    $template = trim((string)($paths['questionario_pdf'] ?? '{codice_sede}/modulistica/questionario.pdf'));
+    $relative = str_replace('{codice_sede}', $codiceSede, $template);
+    $relative = trim(str_replace('\\', '/', $relative), '/');
+
+    if ($relative === '' || str_contains($relative, '../') || preg_match('/\{[^}]+\}/', $relative)) {
+        throw new RuntimeException('Percorso PDF questionario non valido.');
+    }
+
+    return $relative;
+}
+
+function portal_media_questionario_pdf_url(string $codiceSede): string
+{
+    $segments = array_map('rawurlencode', explode('/', portal_media_questionario_pdf_relative_path($codiceSede)));
+    return portal_media_public_base_url() . '/' . implode('/', $segments);
+}
+
+function portal_media_questionario_pdf_read(string $codiceSede): ?string
+{
+    $relative = portal_media_questionario_pdf_relative_path($codiceSede);
+
+    if (portal_media_use_local()) {
+        $file = portal_media_local_root() . '/' . $relative;
+        if (!is_file($file)) {
+            return null;
+        }
+
+        $content = @file_get_contents($file);
+        return is_string($content) && $content !== '' ? $content : null;
+    }
+
+    [, $sftp] = portal_media_sftp_connection();
+    $path = 'ssh2.sftp://' . intval($sftp) . portal_media_sftp_path($relative);
+    if (!@file_exists($path)) {
+        return null;
+    }
+
+    $content = @file_get_contents($path);
+    return is_string($content) && $content !== '' ? $content : null;
+}
+
+function portal_media_questionario_pdf_write(string $codiceSede, string $content): void
+{
+    if ($content === '' || !str_starts_with($content, '%PDF-')) {
+        throw new InvalidArgumentException('Il file selezionato non è un PDF valido.');
+    }
+
+    if (strlen($content) > 20 * 1024 * 1024) {
+        throw new InvalidArgumentException('Il PDF non può superare 20 MB.');
+    }
+
+    $relative = portal_media_questionario_pdf_relative_path($codiceSede);
+
+    if (portal_media_use_local()) {
+        $file = portal_media_local_root() . '/' . $relative;
+        $directory = dirname($file);
+
+        if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
+            throw new RuntimeException('Non è stato possibile preparare la cartella del questionario.');
+        }
+
+        $temporary = $file . '.tmp-' . bin2hex(random_bytes(8));
+        if (file_put_contents($temporary, $content, LOCK_EX) === false || !rename($temporary, $file)) {
+            @unlink($temporary);
+            throw new RuntimeException('Salvataggio del PDF questionario non riuscito.');
+        }
+
+        @chmod($file, 0644);
+        return;
+    }
+
+    [, $sftp] = portal_media_sftp_connection();
+    $remotePath = portal_media_sftp_path($relative);
+    $parts = explode('/', trim(dirname($remotePath), '/'));
+    $current = '';
+
+    foreach ($parts as $part) {
+        $current .= '/' . $part;
+        @ssh2_sftp_mkdir($sftp, $current, 0755, true);
+    }
+
+    $stream = @fopen('ssh2.sftp://' . intval($sftp) . $remotePath, 'wb');
+    if (!$stream) {
+        throw new RuntimeException('Caricamento del PDF questionario non riuscito.');
+    }
+
+    $written = fwrite($stream, $content);
+    fclose($stream);
+
+    if ($written === false || $written !== strlen($content)) {
+        throw new RuntimeException('Caricamento del PDF questionario incompleto.');
+    }
+}
+
+function portal_media_questionario_pdf_delete(string $codiceSede): void
+{
+    $relative = portal_media_questionario_pdf_relative_path($codiceSede);
+
+    if (portal_media_use_local()) {
+        $file = portal_media_local_root() . '/' . $relative;
+        if (is_file($file) && !@unlink($file)) {
+            throw new RuntimeException('Eliminazione del PDF questionario non riuscita.');
+        }
+        return;
+    }
+
+    [, $sftp] = portal_media_sftp_connection();
+    $remotePath = portal_media_sftp_path($relative);
+    if (@file_exists('ssh2.sftp://' . intval($sftp) . $remotePath) && !@ssh2_sftp_unlink($sftp, $remotePath)) {
+        throw new RuntimeException('Eliminazione del PDF questionario non riuscita.');
+    }
+}
