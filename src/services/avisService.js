@@ -65,3 +65,20 @@ export async function aggiornaLimitiAvis(idAvis, limiti) {
     body: JSON.stringify({ id_avis: Number(idAvis), limiti }),
   })
 }
+
+
+export async function gestisciLogoAvis(idAvis, action, logoBase64 = null) {
+  const payload = {
+    id_avis: Number(idAvis),
+    action,
+  }
+
+  if (logoBase64) {
+    payload.logo_base64 = logoBase64
+  }
+
+  return portalRequest('/api/avis/logo.php', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
