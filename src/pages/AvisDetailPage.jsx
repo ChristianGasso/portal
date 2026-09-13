@@ -4,9 +4,7 @@ import {
   aggiornaGeneraleAvis,
   aggiornaLimitiAvis,
   aggiornaServiziAvis,
-  aggiornaDomandaQuestionarioAvis,
   caricaDettaglioAvis,
-  caricaQuestionarioAvis,
   gestisciLogoAvis,
 } from '../services/avisService'
 
@@ -126,11 +124,6 @@ export default function AvisDetailPage({ idAvis, onBack }) {
   const [logoLoading, setLogoLoading] = useState(false)
   const [logoSaving, setLogoSaving] = useState(false)
   const [logoDeleteConfirm, setLogoDeleteConfirm] = useState(false)
-  const [questionario, setQuestionario] = useState([])
-  const [questionarioLoading, setQuestionarioLoading] = useState(false)
-  const [questionarioSaving, setQuestionarioSaving] = useState(false)
-  const [selectedQuestionId, setSelectedQuestionId] = useState(null)
-  const [questionDraft, setQuestionDraft] = useState(null)
 
   async function loadDetail() {
     setLoading(true)
@@ -190,78 +183,7 @@ export default function AvisDetailPage({ idAvis, onBack }) {
   const name = String(firstValue(avis, ['nome', 'denominazione', 'ragione_sociale'], 'AVIS')).trim()
   const code = String(firstValue(avis, ['codice', 'codice_avis', 'codice_sede'], '')).trim()
   const avisEnabled = useMemo(() => generalForm.attiva, [generalForm.attiva])
-  const questionSections = useMemo(() => {
-    const groups = new Map()
 
-    for (const question of questionario) {
-      const key = question.sezione_codice || 'senza_sezione'
-      if (!groups.has(key)) {
-        groups.set(key, {
-          key,
-          title: question.sezione_titolo || 'Senza sezione',
-          description: question.sezione_descrizione || '',
-          order: Number(question.ordine_sezione || 0),
-          questions: [],
-        })
-      }
-      groups.get(key).questions.push(question)
-    }
-
-    return Array.from(groups.values()).sort((a, b) => a.order - b.order)
-  }, [questionario])
-
-
-  async function loadQuestionario() {
-    setQuestionarioLoading(true)
-
-    try {
-      const result = await caricaQuestionarioAvis(idAvis)
-      const domande = Array.isArray(result?.domande) ? result.domande : []
-      setQuestionario(domande)
-
-      if (selectedQuestionId) {
-        const updated = domande.find((item) => item.id === selectedQuestionId) || null
-        setQuestionDraft(updated ? { ...updated } : null)
-        if (!updated) setSelectedQuestionId(null)
-      }
-    } catch (requestError) {
-      setQuestionario([])
-      setQuestionDraft(null)
-      setSelectedQuestionId(null)
-      setToast({
-        tone: 'error',
-        message: requestError.message || 'Non è stato possibile caricare il questionario.',
-      })
-    } finally {
-      setQuestionarioLoading(false)
-    }
-  }
-
-  function selectQuestion(question) {
-    setSelectedQuestionId(question.id)
-    setQuestionDraft({ ...question })
-  }
-
-  async function saveQuestion() {
-    if (!questionDraft || questionarioSaving) return
-
-    setQuestionarioSaving(true)
-    try {
-      const result = await aggiornaDomandaQuestionarioAvis(idAvis, questionDraft)
-      await loadQuestionario()
-      setToast({
-        tone: 'success',
-        message: result.message || 'Domanda aggiornata correttamente.',
-      })
-    } catch (requestError) {
-      setToast({
-        tone: 'error',
-        message: requestError.message || 'Non è stato possibile aggiornare la domanda.',
-      })
-    } finally {
-      setQuestionarioSaving(false)
-    }
-  }
 
   async function loadLogo() {
     setLogoLoading(true)
