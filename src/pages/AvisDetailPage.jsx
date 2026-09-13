@@ -4,6 +4,7 @@ import {
   aggiornaLimitiAvis,
   aggiornaServiziAvis,
   caricaDettaglioAvis,
+  gestisciLogoAvis,
 } from '../services/avisService'
 
 const tabs = [
@@ -118,6 +119,10 @@ export default function AvisDetailPage({ idAvis, onBack }) {
     registrazione_attiva: false,
   })
   const [limitsForm, setLimitsForm] = useState({})
+  const [logo, setLogo] = useState({ presente: false, url: null, data_url: null })
+  const [logoLoading, setLogoLoading] = useState(false)
+  const [logoSaving, setLogoSaving] = useState(false)
+  const [logoDeleteConfirm, setLogoDeleteConfirm] = useState(false)
 
   async function loadDetail() {
     setLoading(true)
@@ -165,11 +170,75 @@ export default function AvisDetailPage({ idAvis, onBack }) {
     void loadDetail()
   }, [idAvis])
 
+  useEffect(() => {
+    if (activeTab === 'logo') {
+      void loadLogo()
+    }
+  }, [activeTab, idAvis])
+
   const avis = detail?.avis || {}
   const database = detail?.database || {}
   const name = String(firstValue(avis, ['nome', 'denominazione', 'ragione_sociale'], 'AVIS')).trim()
   const code = String(firstValue(avis, ['codice', 'codice_avis', 'codice_sede'], '')).trim()
   const avisEnabled = useMemo(() => generalForm.attiva, [generalForm.attiva])
+
+
+  async function loadLogo() {
+    setLogoLoading(true)
+    try {
+      const result = await gestisciLogoAvis(idAvis, 'load')
+      setLogo(result?.logo || { presente: false, url: null, data_url: null })
+    } catch (requestError) {
+      setToast({ tone: 'error', message: requestError.message || 'Non è stato possibile caricare il logo AVIS.' })
+    } finally {
+      setLogoLoading(false)
+    }
+  }
+
+  async function saveLogoFile(file) {
+    if (!file || logoSaving) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ tone: 'error', message: 'Il logo non può superare 5 MB.' })
+      return
+    }
+
+    setLogoSaving(true)
+
+    try {
+      const encoded = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result || ''))
+        reader.onerror = () => reject(new Error('Non è stato possibile leggere il file selezionato.'))
+        reader.readAsDataURL(file)
+      })
+
+      const result = await gestisciLogoAvis(idAvis, 'save', encoded)
+      setLogo(result?.logo || { presente: false, url: null, data_url: null })
+      setLogoDeleteConfirm(false)
+      setToast({ tone: 'success', message: result.message || 'Logo AVIS salvato correttamente.' })
+    } catch (requestError) {
+      setToast({ tone: 'error', message: requestError.message || 'Non è stato possibile salvare il logo AVIS.' })
+    } finally {
+      setLogoSaving(false)
+    }
+  }
+
+  async function deleteLogo() {
+    if (logoSaving) return
+    setLogoSaving(true)
+
+    try {
+      const result = await gestisciLogoAvis(idAvis, 'delete')
+      setLogo(result?.logo || { presente: false, url: null, data_url: null })
+      setLogoDeleteConfirm(false)
+      setToast({ tone: 'success', message: result.message || 'Logo AVIS rimosso correttamente.' })
+    } catch (requestError) {
+      setToast({ tone: 'error', message: requestError.message || 'Non è stato possibile rimuovere il logo AVIS.' })
+    } finally {
+      setLogoSaving(false)
+    }
+  }
 
   async function saveGeneral() {
     if (!generalForm.nome.trim() || saving) return
@@ -391,7 +460,63 @@ export default function AvisDetailPage({ idAvis, onBack }) {
             <div>
               <span className="section-kicker">IDENTITÀ VISIVA</span>
               <h3>Logo AVIS</h3>
-              <p>La sostituzione e la rimozione del logo saranno collegate alla cartella media della AVIS nel prossimo passaggio.</p>
+              <p>Visualizza, sostituisci o rimuovi il logo pubblico associato a questa AVIS.</p>
+            </div>
+          </div>
+
+          <div className="avis-logo-layout">
+            <div className="avis-logo-preview">
+              {logoLoading ? (
+                <span>Caricamento logo…</span>
+              ) : logo?.presente && (logo.data_url || logo.url) ? (
+                <img src={logo.data_url || logo.url} alt={`Logo ${name}`} />
+              ) : (
+                <div className="avis-logo-empty">
+                  <strong>Nessun logo presente</strong>
+                  <span>Carica un file JPEG, PNG o WebP.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="avis-logo-actions">
+              <div>
+                <strong>{logo?.presente ? 'Logo attuale' : 'Aggiungi logo'}</strong>
+                <p>Dimensione massima 5 MB. Il file viene salvato in formato WebP.</p>
+              </div>
+
+              <label className="secondary-button avis-logo-upload">
+                {logoSaving ? 'Salvataggio…' : logo?.presente ? 'Sostituisci logo' : 'Carica logo'}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={logoSaving}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) void saveLogoFile(file)
+                    event.target.value = ''
+                  }}
+                />
+              </label>
+
+              {logo?.presente ? (
+                logoDeleteConfirm ? (
+                  <div className="avis-logo-confirm">
+                    <span>Vuoi davvero rimuovere il logo?</span>
+                    <div>
+                      <button type="button" className="danger-button" onClick={() => void deleteLogo()} disabled={logoSaving}>
+                        {logoSaving ? 'Rimozione…' : 'Sì, rimuovi'}
+                      </button>
+                      <button type="button" className="text-button" onClick={() => setLogoDeleteConfirm(false)} disabled={logoSaving}>
+                        Annulla
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" className="danger-text-button" onClick={() => setLogoDeleteConfirm(true)} disabled={logoSaving}>
+                    Rimuovi logo
+                  </button>
+                )
+              ) : null}
             </div>
           </div>
         </section>
