@@ -82,3 +82,32 @@ export async function gestisciLogoAvis(idAvis, action, logoBase64 = null) {
     body: JSON.stringify(payload),
   })
 }
+
+
+export async function caricaQuestionarioAvis(idAvis) {
+  const id = Number(idAvis)
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error('AVIS non valida.')
+  }
+
+  return portalRequest(`/api/avis/questionario/lista.php?id_avis=${encodeURIComponent(id)}`)
+}
+
+export async function aggiornaDomandaQuestionarioAvis(idAvis, domanda) {
+  return portalRequest('/api/avis/questionario/aggiorna.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      id_domanda: Number(domanda.id),
+      testo: domanda.testo,
+      pagina_compilazione: Number(domanda.pagina_compilazione),
+      tipo_risposta: domanda.tipo_risposta,
+      obbligatoria: Boolean(domanda.obbligatoria),
+      solo_donne: Boolean(domanda.solo_donne),
+      dettaglio_quando: domanda.dettaglio_quando || null,
+      etichetta_dettaglio: domanda.etichetta_dettaglio || null,
+      ordine_domanda: Number(domanda.ordine_domanda),
+      attiva: Boolean(domanda.attiva),
+    }),
+  })
+}
