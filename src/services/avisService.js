@@ -111,3 +111,59 @@ export async function aggiornaDomandaQuestionarioAvis(idAvis, domanda) {
     }),
   })
 }
+
+
+export async function gestisciPdfQuestionarioAvis(idAvis, action, pdfBase64 = null) {
+  const payload = {
+    id_avis: Number(idAvis),
+    action,
+  }
+
+  if (pdfBase64) {
+    payload.pdf_base64 = pdfBase64
+  }
+
+  return portalRequest('/api/avis/questionario/pdf.php', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function caricaLayoutQuestionarioAvis(idAvis) {
+  const id = Number(idAvis)
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error('AVIS non valida.')
+  }
+
+  return portalRequest(`/api/avis/questionario/layout.php?id_avis=${encodeURIComponent(id)}`)
+}
+
+export async function salvaLayoutQuestionarioAvis(idAvis, campi) {
+  return portalRequest('/api/avis/questionario/layout.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      campi,
+    }),
+  })
+}
+
+export async function importaQuestionarioAvis(idAvis, query) {
+  return portalRequest('/api/avis/questionario/importa.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      query,
+    }),
+  })
+}
+
+export async function resetQuestionarioAvis(idAvis) {
+  return portalRequest('/api/avis/questionario/reset.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      conferma: 'RESET DOMANDE',
+    }),
+  })
+}
