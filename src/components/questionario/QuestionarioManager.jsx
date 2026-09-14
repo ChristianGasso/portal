@@ -775,8 +775,15 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         handleDrag(index, event)
                       }}
                     >
-                      <span className="pdf-layout-field-key" title={field.chiave_campo}>{layoutFieldLabel(field.chiave_campo)}</span>
-                      <span className="pdf-layout-field-preview">{layoutFieldPreview(field.chiave_campo)}</span>
+                      <span className="pdf-layout-field-label" title={field.chiave_campo}>
+                        {layoutFieldLabel(field.chiave_campo)}
+                      </span>
+                      <span
+                        className="pdf-layout-field-preview"
+                        style={{ fontSize: Math.max(8, Number(field.font_size || 10) * 1.4) + 'px' }}
+                      >
+                        {layoutFieldPreview(field.chiave_campo)}
+                      </span>
                       <span className="pdf-layout-anchor" aria-hidden="true" />
                     </button>
                   ))}
