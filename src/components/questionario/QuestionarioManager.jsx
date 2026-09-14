@@ -236,71 +236,109 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     let loadingTask = null
     let renderTask = null
     let resizeObserver = null
+    let document = null
+    let page = null
+    let renderQueued = false
 
     async function renderPdfPage() {
+      if (renderQueued || cancelled) return
+      renderQueued = true
+
       try {
-        const data = await pdfPageBlob.arrayBuffer()
-        if (cancelled) return
-
-        loadingTask = pdfjsLib.getDocument({ data })
-        const document = await loadingTask.promise
-        if (cancelled) return
-
-        const page = await document.getPage(1)
-        const baseViewport = page.getViewport({ scale: 1 })
-        setPdfPageRatio(baseViewport.width / baseViewport.height)
-
         const canvas = pdfCanvasRef.current
         const stage = stageRef.current
         if (!canvas || !stage) return
 
+        if (!page) {
+          const data = await pdfPageBlob.arrayBuffer()
+          if (cancelled) return
+
+          loadingTask = pdfjsLib.getDocument({ data })
+          document = await loadingTask.promise
+          if (cancelled) return
+
+          page = await document.getPage(1)
+        }
+
+        const baseViewport = page.getViewport({ scale: 1 })
+        setPdfPageRatio(baseViewport.width / baseViewport.height)
+
         const cssWidth = Math.max(1, stage.clientWidth)
         const scale = cssWidth / baseViewport.width
         const viewport = page.getViewport({ scale })
-        const pixelRatio = window.devicePixelRatio || 1
+        const outputScale = window.devicePixelRatio || 1
 
-        canvas.width = Math.floor(viewport.width * pixelRatio)
-        canvas.height = Math.floor(viewport.height * pixelRatio)
+        canvas.width = Math.max(1, Math.floor(viewport.width * outputScale))
+        canvas.height = Math.max(1, Math.floor(viewport.height * outputScale))
         canvas.style.width = viewport.width + 'px'
         canvas.style.height = viewport.height + 'px'
 
         const context = canvas.getContext('2d', { alpha: false })
-        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+        context.save()
+        context.fillStyle = '#ffffff'
+        context.fillRect(0, 0, canvas.width, canvas.height)
+        context.restore()
 
         renderTask = page.render({
           canvasContext: context,
           viewport,
+          transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
         })
+
         await renderTask.promise
       } catch (error) {
         if (!cancelled && error?.name !== 'RenderingCancelledException') {
           onToast({ tone: 'error', message: 'Non è stato possibile renderizzare la pagina PDF nell’editor.' })
         }
+      } finally {
+        renderQueued = false
       }
     }
 
     void renderPdfPage()
 
     resizeObserver = new ResizeObserver(() => {
-      if (renderTask) {
-        try {
-          renderTask.cancel()
-        } catch {
-          // Nessuna azione necessaria.
+      if (cancelled) return
+
+      window.requestAnimationFrame(() => {
+        if (cancelled) return
+
+        if (renderTask) {
+          try {
+            renderTask.cancel()
+          } catch {
+            // Nessuna azione necessaria.
+          }
+          renderTask = null
         }
-      }
-      void renderPdfPage()
+
+        void renderPdfPage()
+      })
     })
     resizeObserver.observe(stageRef.current)
 
     return () => {
       cancelled = true
       resizeObserver?.disconnect()
+
       try {
         renderTask?.cancel()
       } catch {
         // Nessuna azione necessaria.
       }
+
+      try {
+        page?.cleanup()
+      } catch {
+        // Nessuna azione necessaria.
+      }
+
+      try {
+        document?.destroy()
+      } catch {
+        // Nessuna azione necessaria.
+      }
+
       try {
         loadingTask?.destroy()
       } catch {
