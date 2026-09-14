@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   aggiornaDomandaQuestionarioAvis,
+  caricaInfoPagineQuestionarioAvis,
   caricaLayoutQuestionarioAvis,
+  caricaPaginaQuestionarioAvis,
   caricaQuestionarioAvis,
   gestisciPdfQuestionarioAvis,
   importaQuestionarioAvis,
@@ -64,6 +66,9 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [pdf, setPdf] = useState({ presente: false, url: null })
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfSaving, setPdfSaving] = useState(false)
+  const [pdfPageCount, setPdfPageCount] = useState(0)
+  const [pdfPageUrl, setPdfPageUrl] = useState(null)
+  const [pdfPageLoading, setPdfPageLoading] = useState(false)
 
   const [layout, setLayout] = useState([])
   const [layoutLoading, setLayoutLoading] = useState(false)
@@ -138,6 +143,63 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   useEffect(() => {
     layoutRef.current = layout
   }, [layout])
+
+  useEffect(() => {
+    let cancelled = false
+    let createdUrl = null
+
+    async function loadPagedPreview() {
+      if (!pdf.presente) {
+        setPdfPageCount(0)
+        setPdfPageUrl((current) => {
+          if (current) URL.revokeObjectURL(current)
+          return null
+        })
+        return
+      }
+
+      setPdfPageLoading(true)
+      try {
+        const info = await caricaInfoPagineQuestionarioAvis(idAvis)
+        if (cancelled) return
+
+        const pages = Math.max(1, Number(info?.pagine) || 1)
+        setPdfPageCount(pages)
+
+        const targetPage = Math.min(Math.max(1, Number(layoutPage) || 1), pages)
+        if (targetPage !== Number(layoutPage)) {
+          setLayoutPage(targetPage)
+          return
+        }
+
+        const blob = await caricaPaginaQuestionarioAvis(idAvis, targetPage)
+        if (cancelled) return
+
+        createdUrl = URL.createObjectURL(blob)
+        setPdfPageUrl((current) => {
+          if (current) URL.revokeObjectURL(current)
+          return createdUrl
+        })
+      } catch (error) {
+        if (!cancelled) {
+          setPdfPageCount(0)
+          setPdfPageUrl((current) => {
+            if (current) URL.revokeObjectURL(current)
+            return null
+          })
+          onToast({ tone: 'error', message: error.message || 'Non è stato possibile caricare la pagina del PDF.' })
+        }
+      } finally {
+        if (!cancelled) setPdfPageLoading(false)
+      }
+    }
+
+    void loadPagedPreview()
+
+    return () => {
+      cancelled = true
+    }
+  }, [idAvis, pdf.presente, pdf.url, layoutPage])
 
   const groups = useMemo(() => {
     const map = new Map()
@@ -584,11 +646,6 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       {section === 'layout' ? (
         <div className="questionnaire-layout-editor">
           <div className="questionnaire-layout-toolbar">
-            <label className="portal-field compact">
-              <span>Pagina</span>
-              <input type="number" min="1" max="99" value={layoutPage} onChange={(event) => setLayoutPage(Math.max(1, Number(event.target.value) || 1))} />
-            </label>
-
             <label className="portal-field layout-key-field">
               <span>Nuovo campo</span>
               <input list="questionnaire-field-keys" value={newFieldKey} onChange={(event) => setNewFieldKey(event.target.value)} placeholder="es. donatore.nome" />
@@ -609,16 +666,43 @@ export default function QuestionarioManager({ idAvis, onToast }) {
           {layoutLoading ? (
             <div className="questionnaire-loading">Caricamento layout…</div>
           ) : (
-            <div className="questionnaire-layout-workspace">
+            <>
+              <div className="questionnaire-page-nav" aria-label="Pagine del questionario">
+                <div className="questionnaire-page-nav-copy">
+                  <span className="section-kicker">PAGINA PDF</span>
+                  <strong>{pdfPageCount ? `Pagina ${layoutPage} di ${pdfPageCount}` : 'Pagina non disponibile'}</strong>
+                </div>
+                <div className="questionnaire-page-buttons">
+                  {Array.from({ length: pdfPageCount }, (_, index) => index + 1).map((page) => (
+                    <button
+                      type="button"
+                      key={page}
+                      className={Number(layoutPage) === page ? 'is-active' : ''}
+                      onClick={() => {
+                        setLayoutPage(page)
+                        setSelectedFieldIndex(null)
+                      }}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="questionnaire-layout-workspace">
               <div className="pdf-layout-stage" ref={stageRef}>
-                {pdf.presente && pdf.url ? (
+                {pdfPageLoading ? (
+                  <div className="pdf-layout-placeholder">Caricamento pagina {layoutPage}…</div>
+                ) : pdfPageUrl ? (
                   <object
-                    data={pdf.url + '#page=' + layoutPage + '&toolbar=0&navpanes=0&scrollbar=0&view=FitH'}
+                    data={pdfPageUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit'}
                     type="application/pdf"
                     aria-label={'Pagina ' + layoutPage + ' questionario'}
                   />
                 ) : (
-                  <div className="pdf-layout-placeholder">Carica prima il PDF di partenza</div>
+                  <div className="pdf-layout-placeholder">
+                    {pdf.presente ? 'Anteprima pagina non disponibile' : 'Carica prima il PDF di partenza'}
+                  </div>
                 )}
 
                 <div className="pdf-layout-overlay">
@@ -739,7 +823,8 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                   </div>
                 )}
               </aside>
-            </div>
+              </div>
+            </>
           )}
         </div>
       ) : null}
