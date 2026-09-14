@@ -34,7 +34,7 @@ function portal_questionario_preview_text(string $key): string
     $fixed = [
         'donatore.nome' => 'Mario',
         'donatore.cognome' => 'Rossi',
-        'donatore.nome_completo' => 'Rossi Mario',
+        'donatore.nome_completo' => 'Mario Rossi',
         'donatore.codice_fiscale' => 'RSSMRA80A01F158X',
         'donatore.sesso' => 'M',
         'donatore.data_nascita' => '01/01/1980',
@@ -56,6 +56,17 @@ function portal_questionario_preview_text(string $key): string
         'firma.donatore' => 'Firma donatore',
         'firma.medico' => 'Firma medico',
     ];
+
+    if (str_starts_with($normalized, 'concat:')) {
+        $parts = array_filter(explode(':', substr($normalized, strlen('concat:'))));
+        $values = [];
+
+        foreach ($parts as $part) {
+            $values[] = $fixed[$part] ?? $part;
+        }
+
+        return trim(implode(' ', $values));
+    }
 
     if (isset($fixed[$normalized])) {
         return $fixed[$normalized];
@@ -175,7 +186,7 @@ function portal_questionario_preview_draw(
         default => 'L',
     };
 
-    $pdf->SetTextColor(220, 38, 38);
+    $pdf->SetTextColor(0, 0, 0);
 
     if ((string)$field['tipo_campo'] === 'check') {
         $pdf->SetFont('Helvetica', 'B', $fontSize);
