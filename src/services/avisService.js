@@ -148,6 +148,57 @@ export async function salvaLayoutQuestionarioAvis(idAvis, campi) {
   })
 }
 
+
+export async function scaricaAnteprimaQuestionarioAvis(idAvis, campi) {
+  const token = getPortalToken()
+
+  if (!token) {
+    throw new Error('Sessione Portal non disponibile.')
+  }
+
+  const response = await fetch('/api/avis/questionario/anteprima.php', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      campi,
+    }),
+  })
+
+  if (!response.ok) {
+    let message = 'Non è stato possibile generare il PDF di prova.'
+    try {
+      const data = await response.json()
+      if (data?.error) message = data.error
+    } catch {
+      // Mantiene il messaggio generico se la risposta non è JSON.
+    }
+    throw new Error(message)
+  }
+
+  const blob = await response.blob()
+  if (!blob || blob.size === 0) {
+    throw new Error('Il PDF di prova risulta vuoto.')
+  }
+
+  const disposition = response.headers.get('Content-Disposition') || ''
+  const filenameMatch = disposition.match(/filename="?([^"]+)"?/i)
+  const filename = filenameMatch?.[1] || 'questionario_prova.pdf'
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+
+  return { success: true, filename }
+}
+
 export async function importaQuestionarioAvis(idAvis, query) {
   return portalRequest('/api/avis/questionario/importa.php', {
     method: 'POST',
