@@ -129,6 +129,56 @@ export async function gestisciPdfQuestionarioAvis(idAvis, action, pdfBase64 = nu
   })
 }
 
+
+export async function caricaInfoPagineQuestionarioAvis(idAvis) {
+  return portalRequest('/api/avis/questionario/pagina.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      action: 'info',
+    }),
+  })
+}
+
+export async function caricaPaginaQuestionarioAvis(idAvis, pagina) {
+  const token = getPortalToken()
+
+  if (!token) {
+    throw new Error('Sessione Portal non disponibile.')
+  }
+
+  const response = await fetch('/api/avis/questionario/pagina.php', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      action: 'page',
+      pagina: Number(pagina),
+    }),
+  })
+
+  if (!response.ok) {
+    let message = 'Non è stato possibile caricare la pagina del questionario.'
+    try {
+      const data = await response.json()
+      if (data?.error) message = data.error
+    } catch {
+      // Mantiene il messaggio generico se la risposta non è JSON.
+    }
+    throw new Error(message)
+  }
+
+  const blob = await response.blob()
+  if (!blob || blob.size === 0) {
+    throw new Error('La pagina PDF risulta vuota.')
+  }
+
+  return blob
+}
+
 export async function caricaLayoutQuestionarioAvis(idAvis) {
   const id = Number(idAvis)
   if (!Number.isInteger(id) || id <= 0) {
