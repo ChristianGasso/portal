@@ -39,6 +39,11 @@ button {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
+  transition: grid-template-columns 180ms ease;
+}
+
+.portal-app.is-sidebar-collapsed {
+  grid-template-columns: 86px minmax(0, 1fr);
 }
 
 .portal-sidebar {
@@ -51,13 +56,63 @@ button {
   background: #0b1739;
   color: #fff;
   z-index: 40;
+  transition: padding 180ms ease;
+}
+
+.portal-app.is-sidebar-collapsed .portal-sidebar {
+  padding-inline: 12px;
 }
 
 .portal-brand {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 4px 6px 28px;
+}
+
+.portal-brand-copy {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.portal-sidebar-toggle {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.portal-sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.portal-app.is-sidebar-collapsed .portal-brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.portal-app.is-sidebar-collapsed .portal-brand-copy {
+  display: none;
+}
+
+.portal-app.is-sidebar-collapsed .portal-sidebar-toggle {
+  position: absolute;
+  right: -6px;
+  top: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: #16264f;
 }
 
 .portal-brand-mark {
@@ -130,6 +185,15 @@ button {
 
 .portal-nav-item.is-active .portal-nav-icon {
   background: rgba(255, 255, 255, 0.16);
+}
+
+.portal-app.is-sidebar-collapsed .portal-nav-item {
+  justify-content: center;
+  padding-inline: 8px;
+}
+
+.portal-app.is-sidebar-collapsed .portal-nav-label {
+  display: none;
 }
 
 .portal-sidebar-footer {
@@ -451,11 +515,13 @@ button {
 }
 
 @media (max-width: 860px) {
-  .portal-app {
+  .portal-app,
+  .portal-app.is-sidebar-collapsed {
     grid-template-columns: 1fr;
   }
 
-  .portal-sidebar {
+  .portal-sidebar,
+  .portal-app.is-sidebar-collapsed .portal-sidebar {
     position: fixed;
     left: 0;
     top: 0;
@@ -467,6 +533,31 @@ button {
 
   .portal-sidebar.is-open {
     transform: translateX(0);
+  }
+
+  .portal-app.is-sidebar-collapsed .portal-brand {
+    justify-content: flex-start;
+    padding-inline: 6px;
+  }
+
+  .portal-app.is-sidebar-collapsed .portal-brand-copy,
+  .portal-app.is-sidebar-collapsed .portal-nav-label,
+  .portal-app.is-sidebar-collapsed .portal-sidebar-user {
+    display: block;
+  }
+
+  .portal-app.is-sidebar-collapsed .portal-nav-item {
+    justify-content: flex-start;
+    padding-inline: 14px;
+  }
+
+  .portal-app.is-sidebar-collapsed .portal-sidebar-footer {
+    justify-content: flex-start;
+    padding-inline: 10px;
+  }
+
+  .portal-sidebar-toggle {
+    display: none;
   }
 
   .portal-backdrop {
@@ -647,6 +738,15 @@ button {
 .portal-sidebar-user {
   min-width: 0;
   flex: 1;
+}
+
+.portal-app.is-sidebar-collapsed .portal-sidebar-footer {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.portal-app.is-sidebar-collapsed .portal-sidebar-user {
+  display: none;
 }
 
 .portal-sidebar-user strong,
