@@ -5,9 +5,8 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 import {
   aggiornaDomandaQuestionarioAvis,
-  caricaInfoPagineQuestionarioAvis,
   caricaLayoutQuestionarioAvis,
-  caricaPaginaQuestionarioAvis,
+  caricaPdfSorgenteQuestionarioAvis,
   caricaQuestionarioAvis,
   gestisciPdfQuestionarioAvis,
   importaQuestionarioAvis,
@@ -104,7 +103,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfSaving, setPdfSaving] = useState(false)
   const [pdfPageCount, setPdfPageCount] = useState(0)
-  const [pdfPageBlob, setPdfPageBlob] = useState(null)
+  const [pdfSourceBlob, setPdfSourceBlob] = useState(null)
   const [pdfPageLoading, setPdfPageLoading] = useState(false)
   const [pdfPageRatio, setPdfPageRatio] = useState(210 / 297)
 
@@ -186,79 +185,73 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   useEffect(() => {
     let cancelled = false
 
-    async function loadPagedPreview() {
+    async function loadPdfSource() {
       if (!pdf.presente) {
         setPdfPageCount(0)
-        setPdfPageBlob(null)
+        setPdfSourceBlob(null)
         return
       }
 
       setPdfPageLoading(true)
       try {
-        const info = await caricaInfoPagineQuestionarioAvis(idAvis)
+        const blob = await caricaPdfSorgenteQuestionarioAvis(idAvis)
         if (cancelled) return
-
-        const pages = Math.max(1, Number(info?.pagine) || 1)
-        setPdfPageCount(pages)
-
-        const targetPage = Math.min(Math.max(1, Number(layoutPage) || 1), pages)
-        if (targetPage !== Number(layoutPage)) {
-          setLayoutPage(targetPage)
-          return
-        }
-
-        const blob = await caricaPaginaQuestionarioAvis(idAvis, targetPage)
-        if (cancelled) return
-
-        setPdfPageBlob(blob)
+        setPdfSourceBlob(blob)
       } catch (error) {
         if (!cancelled) {
           setPdfPageCount(0)
-          setPdfPageBlob(null)
-          onToast({ tone: 'error', message: error.message || 'Non è stato possibile caricare la pagina del PDF.' })
+          setPdfSourceBlob(null)
+          onToast({ tone: 'error', message: error.message || 'Non è stato possibile caricare il PDF del questionario.' })
         }
       } finally {
         if (!cancelled) setPdfPageLoading(false)
       }
     }
 
-    void loadPagedPreview()
+    void loadPdfSource()
 
     return () => {
       cancelled = true
     }
-  }, [idAvis, pdf.presente, pdf.url, layoutPage])
+  }, [idAvis, pdf.presente, pdf.url])
 
   useEffect(() => {
-    if (!pdfPageBlob || !pdfCanvasRef.current || !stageRef.current) return
+    if (!pdfSourceBlob || !pdfCanvasRef.current || !stageRef.current) return
 
     let cancelled = false
     let loadingTask = null
+    let document = null
     let renderTask = null
     let resizeObserver = null
-    let document = null
-    let page = null
-    let renderQueued = false
+    let resizeFrame = 0
 
-    async function renderPdfPage() {
-      if (renderQueued || cancelled) return
-      renderQueued = true
+    async function renderCurrentPage() {
+      if (cancelled) return
 
       try {
         const canvas = pdfCanvasRef.current
         const stage = stageRef.current
         if (!canvas || !stage) return
 
-        if (!page) {
-          const data = await pdfPageBlob.arrayBuffer()
+        if (!document) {
+          const data = await pdfSourceBlob.arrayBuffer()
           if (cancelled) return
 
           loadingTask = pdfjsLib.getDocument({ data })
           document = await loadingTask.promise
           if (cancelled) return
 
-          page = await document.getPage(1)
+          setPdfPageCount(document.numPages)
+
+          if (layoutPage > document.numPages) {
+            setLayoutPage(document.numPages || 1)
+            return
+          }
         }
+
+        const pageNumber = Math.min(Math.max(1, Number(layoutPage) || 1), document.numPages)
+        const page = await document.getPage(pageNumber)
+        if (cancelled) return
 
         const baseViewport = page.getViewport({ scale: 1 })
         setPdfPageRatio(baseViewport.width / baseViewport.height)
@@ -268,21 +261,23 @@ export default function QuestionarioManager({ idAvis, onToast }) {
         const viewport = page.getViewport({ scale })
         const outputScale = window.devicePixelRatio || 1
 
+        try {
+          renderTask?.cancel()
+        } catch {
+          // Nessuna azione necessaria.
+        }
+
         canvas.width = Math.max(1, Math.floor(viewport.width * outputScale))
         canvas.height = Math.max(1, Math.floor(viewport.height * outputScale))
         canvas.style.width = viewport.width + 'px'
         canvas.style.height = viewport.height + 'px'
 
         const context = canvas.getContext('2d', { alpha: false })
-        context.save()
-        context.fillStyle = '#ffffff'
-        context.fillRect(0, 0, canvas.width, canvas.height)
-        context.restore()
-
         renderTask = page.render({
           canvasContext: context,
           viewport,
           transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null,
+          background: '#ffffff',
         })
 
         await renderTask.promise
@@ -290,29 +285,15 @@ export default function QuestionarioManager({ idAvis, onToast }) {
         if (!cancelled && error?.name !== 'RenderingCancelledException') {
           onToast({ tone: 'error', message: 'Non è stato possibile renderizzare la pagina PDF nell’editor.' })
         }
-      } finally {
-        renderQueued = false
       }
     }
 
-    void renderPdfPage()
+    void renderCurrentPage()
 
     resizeObserver = new ResizeObserver(() => {
-      if (cancelled) return
-
-      window.requestAnimationFrame(() => {
-        if (cancelled) return
-
-        if (renderTask) {
-          try {
-            renderTask.cancel()
-          } catch {
-            // Nessuna azione necessaria.
-          }
-          renderTask = null
-        }
-
-        void renderPdfPage()
+      window.cancelAnimationFrame(resizeFrame)
+      resizeFrame = window.requestAnimationFrame(() => {
+        void renderCurrentPage()
       })
     })
     resizeObserver.observe(stageRef.current)
@@ -320,15 +301,10 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     return () => {
       cancelled = true
       resizeObserver?.disconnect()
+      window.cancelAnimationFrame(resizeFrame)
 
       try {
         renderTask?.cancel()
-      } catch {
-        // Nessuna azione necessaria.
-      }
-
-      try {
-        page?.cleanup()
       } catch {
         // Nessuna azione necessaria.
       }
@@ -345,7 +321,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
         // Nessuna azione necessaria.
       }
     }
-  }, [pdfPageBlob])
+  }, [pdfSourceBlob, layoutPage])
 
   const groups = useMemo(() => {
     const map = new Map()
@@ -857,7 +833,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
               >
                 {pdfPageLoading ? (
                   <div className="pdf-layout-placeholder">Caricamento pagina {layoutPage}…</div>
-                ) : pdfPageBlob ? (
+                ) : pdfSourceBlob ? (
                   <canvas
                     ref={pdfCanvasRef}
                     className="pdf-layout-canvas"
