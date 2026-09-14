@@ -16,6 +16,7 @@ function getInitials(user) {
 export default function PortalLayout({ activePage, onNavigate, user, onLogout, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('portal-sidebar-collapsed') === '1')
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('portal-theme') === 'dark')
   const current = useMemo(
     () => navigation.find((item) => item.key === activePage) ?? navigation[0],
     [activePage],
@@ -29,10 +30,14 @@ export default function PortalLayout({ activePage, onNavigate, user, onLogout, c
     localStorage.setItem('portal-sidebar-collapsed', sidebarCollapsed ? '1' : '0')
   }, [sidebarCollapsed])
 
+  useEffect(() => {
+    localStorage.setItem('portal-theme', darkMode ? 'dark' : 'light')
+  }, [darkMode])
+
   const displayName = [user?.nome, user?.cognome].filter(Boolean).join(' ') || 'Amministratore'
 
   return (
-    <div className={`portal-app ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+    <div className={`portal-app ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${darkMode ? 'is-dark' : ''}`}>
       <aside className={`portal-sidebar ${mobileOpen ? 'is-open' : ''}`}>
         <div className="portal-brand">
           <div className="portal-brand-mark">SP</div>
@@ -104,6 +109,16 @@ export default function PortalLayout({ activePage, onNavigate, user, onLogout, c
           </div>
 
           <div className="portal-topbar-actions">
+            <button
+              type="button"
+              className="portal-theme-toggle"
+              aria-label={darkMode ? 'Attiva modalità chiara' : 'Attiva modalità scura'}
+              title={darkMode ? 'Modalità chiara' : 'Modalità scura'}
+              onClick={() => setDarkMode((current) => !current)}
+            >
+              <span aria-hidden="true">{darkMode ? '☀' : '☾'}</span>
+              <span className="portal-theme-toggle-label">{darkMode ? 'Chiara' : 'Scura'}</span>
+            </button>
             <span className="portal-status-dot" />
             <span>Sistema operativo</span>
           </div>
