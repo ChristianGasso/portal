@@ -15,7 +15,7 @@ function portal_questionario_preview_require_pdf_libraries(): void
         return;
     }
 
-    $accountRoot = dirname(__DIR__, 4);
+    $accountRoot = dirname(__DIR__, 5);
     $fpdfFile = $accountRoot . '/Gestionale-Avis/public/libs/fpdf/fpdf.php';
     $fpdiAutoload = $accountRoot . '/Gestionale-Avis/public/libs/fpdi/src/autoload.php';
 
