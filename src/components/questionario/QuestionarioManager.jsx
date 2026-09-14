@@ -293,6 +293,8 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   }, [pdfSourceBlob])
 
   useEffect(() => {
+    if (section !== 'layout') return
+
     let cancelled = false
 
     async function renderCurrentPage() {
@@ -370,7 +372,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       }
       pdfRenderTaskRef.current = null
     }
-  }, [layoutPage, pdfPageCount])
+  }, [section, layoutPage, pdfPageCount])
 
   const groups = useMemo(() => {
     const map = new Map()
