@@ -234,19 +234,10 @@ export async function scaricaAnteprimaQuestionarioAvis(idAvis, campi) {
     throw new Error('Il PDF di prova risulta vuoto.')
   }
 
-  const disposition = response.headers.get('Content-Disposition') || ''
-  const filenameMatch = disposition.match(/filename="?([^"]+)"?/i)
-  const filename = filenameMatch?.[1] || 'questionario_prova.pdf'
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
-
-  return { success: true, filename }
+  return {
+    success: true,
+    url: URL.createObjectURL(blob),
+  }
 }
 
 export async function importaQuestionarioAvis(idAvis, query) {
