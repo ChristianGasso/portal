@@ -458,11 +458,23 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       return
     }
 
+    const previewWindow = window.open('', '_blank')
+    if (!previewWindow) {
+      onToast({ tone: 'error', message: 'Il browser ha bloccato l’apertura del PDF di prova.' })
+      return
+    }
+
+    previewWindow.document.title = 'Preparazione PDF di prova'
+    previewWindow.document.body.innerHTML = '<p style="font-family: sans-serif; padding: 24px;">Preparazione PDF di prova…</p>'
+
     setPreviewDownloading(true)
     try {
-      await scaricaAnteprimaQuestionarioAvis(idAvis, layoutRef.current)
-      onToast({ tone: 'success', message: 'PDF di prova scaricato correttamente.' })
+      const result = await scaricaAnteprimaQuestionarioAvis(idAvis, layoutRef.current)
+      previewWindow.location.href = result.url
+      window.setTimeout(() => URL.revokeObjectURL(result.url), 60000)
+      onToast({ tone: 'success', message: 'PDF di prova aperto in una nuova scheda.' })
     } catch (error) {
+      previewWindow.close()
       onToast({ tone: 'error', message: error.message || 'Non è stato possibile generare il PDF di prova.' })
     } finally {
       setPreviewDownloading(false)
@@ -691,7 +703,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
             <button type="button" className="secondary-button" onClick={addLayoutField}>Aggiungi campo</button>
             <button type="button" className="secondary-button" onClick={() => void downloadPreviewPdf()} disabled={previewDownloading || !pdf.presente || !layout.length}>
-              {previewDownloading ? 'Preparazione PDF…' : 'Scarica PDF di prova'}
+              {previewDownloading ? 'Preparazione PDF…' : 'Apri PDF di prova'}
             </button>
             <button type="button" className="primary-button" onClick={() => void saveLayout()} disabled={layoutSaving || !layoutDirty}>
               {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva layout' : 'Layout salvato'}
