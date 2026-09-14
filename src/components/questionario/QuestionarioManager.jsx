@@ -39,6 +39,7 @@ function layoutFieldPreview(key) {
   const examples = {
     'donatore.nome': 'Mario',
     'donatore.cognome': 'Rossi',
+    'donatore.nome_completo': 'Mario Rossi',
     'donatore.codice_fiscale': 'RSSMRA80A01F158X',
     'donatore.data_nascita': '01/01/1980',
     'donatore.email': 'mario.rossi@email.it',
@@ -49,9 +50,41 @@ function layoutFieldPreview(key) {
     'firma.medico': 'Firma medico',
   }
 
+  if (normalized.startsWith('concat:')) {
+    return normalized
+      .slice('concat:'.length)
+      .split(':')
+      .map((part) => examples[part] || part)
+      .filter(Boolean)
+      .join(' ')
+  }
+
   if (examples[normalized]) return examples[normalized]
   if (normalized.startsWith('domanda:')) return normalized.includes(':si') || normalized.includes(':no') ? 'X' : 'SI'
   if (normalized.startsWith('dettaglio:')) return 'Dettaglio risposta'
+  return String(key || 'Campo')
+}
+
+function layoutFieldLabel(key) {
+  const normalized = String(key || '').trim().toLowerCase()
+  const labels = {
+    'donatore.nome': 'Nome donatore',
+    'donatore.cognome': 'Cognome donatore',
+    'donatore.nome_completo': 'Nome e cognome donatore',
+    'donatore.codice_fiscale': 'Codice fiscale',
+    'donatore.data_nascita': 'Data di nascita',
+    'donatore.email': 'Email',
+    'donatore.telefono': 'Telefono',
+    'questionario.data': 'Data questionario',
+    'raccolta.data': 'Data raccolta',
+    'firma.donatore': 'Firma donatore',
+    'firma.medico': 'Firma medico',
+  }
+
+  if (normalized.startsWith('concat:')) return 'Campo concatenato'
+  if (labels[normalized]) return labels[normalized]
+  if (normalized.startsWith('domanda:')) return 'Risposta ' + normalized.split(':')[1].toUpperCase()
+  if (normalized.startsWith('dettaglio:')) return 'Dettaglio ' + normalized.split(':')[1].toUpperCase()
   return String(key || 'Campo')
 }
 
@@ -223,6 +256,8 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     const fixed = [
       'donatore.nome',
       'donatore.cognome',
+      'donatore.nome_completo',
+      'concat:donatore.nome:donatore.cognome',
       'donatore.codice_fiscale',
       'donatore.data_nascita',
       'donatore.email',
@@ -728,7 +763,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         handleDrag(index, event)
                       }}
                     >
-                      <span className="pdf-layout-field-key">{field.chiave_campo}</span>
+                      <span className="pdf-layout-field-key" title={field.chiave_campo}>{layoutFieldLabel(field.chiave_campo)}</span>
                       <span className="pdf-layout-field-preview">{layoutFieldPreview(field.chiave_campo)}</span>
                       <span className="pdf-layout-anchor" aria-hidden="true" />
                     </button>
