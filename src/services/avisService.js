@@ -130,17 +130,7 @@ export async function gestisciPdfQuestionarioAvis(idAvis, action, pdfBase64 = nu
 }
 
 
-export async function caricaInfoPagineQuestionarioAvis(idAvis) {
-  return portalRequest('/api/avis/questionario/pagina.php', {
-    method: 'POST',
-    body: JSON.stringify({
-      id_avis: Number(idAvis),
-      action: 'info',
-    }),
-  })
-}
-
-export async function caricaPaginaQuestionarioAvis(idAvis, pagina) {
+export async function caricaPdfSorgenteQuestionarioAvis(idAvis) {
   const token = getPortalToken()
 
   if (!token) {
@@ -155,13 +145,12 @@ export async function caricaPaginaQuestionarioAvis(idAvis, pagina) {
     },
     body: JSON.stringify({
       id_avis: Number(idAvis),
-      action: 'page',
-      pagina: Number(pagina),
+      action: 'source',
     }),
   })
 
   if (!response.ok) {
-    let message = 'Non è stato possibile caricare la pagina del questionario.'
+    let message = 'Non è stato possibile caricare il PDF del questionario.'
     try {
       const data = await response.json()
       if (data?.error) message = data.error
@@ -173,7 +162,7 @@ export async function caricaPaginaQuestionarioAvis(idAvis, pagina) {
 
   const blob = await response.blob()
   if (!blob || blob.size === 0) {
-    throw new Error('La pagina PDF risulta vuota.')
+    throw new Error('Il PDF del questionario risulta vuoto.')
   }
 
   return blob
