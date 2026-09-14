@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import * as pdfjsLib from 'pdfjs-dist'
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 import {
   aggiornaDomandaQuestionarioAvis,
   caricaInfoPagineQuestionarioAvis,
@@ -100,8 +104,9 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfSaving, setPdfSaving] = useState(false)
   const [pdfPageCount, setPdfPageCount] = useState(0)
-  const [pdfPageUrl, setPdfPageUrl] = useState(null)
+  const [pdfPageBlob, setPdfPageBlob] = useState(null)
   const [pdfPageLoading, setPdfPageLoading] = useState(false)
+  const [pdfPageRatio, setPdfPageRatio] = useState(210 / 297)
 
   const [layout, setLayout] = useState([])
   const [layoutLoading, setLayoutLoading] = useState(false)
@@ -112,6 +117,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [newFieldKey, setNewFieldKey] = useState('')
   const [layoutDirty, setLayoutDirty] = useState(false)
   const stageRef = useRef(null)
+  const pdfCanvasRef = useRef(null)
   const layoutRef = useRef([])
 
   const [query, setQuery] = useState('')
@@ -179,15 +185,11 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
   useEffect(() => {
     let cancelled = false
-    let createdUrl = null
 
     async function loadPagedPreview() {
       if (!pdf.presente) {
         setPdfPageCount(0)
-        setPdfPageUrl((current) => {
-          if (current) URL.revokeObjectURL(current)
-          return null
-        })
+        setPdfPageBlob(null)
         return
       }
 
@@ -208,18 +210,11 @@ export default function QuestionarioManager({ idAvis, onToast }) {
         const blob = await caricaPaginaQuestionarioAvis(idAvis, targetPage)
         if (cancelled) return
 
-        createdUrl = URL.createObjectURL(blob)
-        setPdfPageUrl((current) => {
-          if (current) URL.revokeObjectURL(current)
-          return createdUrl
-        })
+        setPdfPageBlob(blob)
       } catch (error) {
         if (!cancelled) {
           setPdfPageCount(0)
-          setPdfPageUrl((current) => {
-            if (current) URL.revokeObjectURL(current)
-            return null
-          })
+          setPdfPageBlob(null)
           onToast({ tone: 'error', message: error.message || 'Non è stato possibile caricare la pagina del PDF.' })
         }
       } finally {
@@ -233,6 +228,86 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       cancelled = true
     }
   }, [idAvis, pdf.presente, pdf.url, layoutPage])
+
+  useEffect(() => {
+    if (!pdfPageBlob || !pdfCanvasRef.current || !stageRef.current) return
+
+    let cancelled = false
+    let loadingTask = null
+    let renderTask = null
+    let resizeObserver = null
+
+    async function renderPdfPage() {
+      try {
+        const data = await pdfPageBlob.arrayBuffer()
+        if (cancelled) return
+
+        loadingTask = pdfjsLib.getDocument({ data })
+        const document = await loadingTask.promise
+        if (cancelled) return
+
+        const page = await document.getPage(1)
+        const baseViewport = page.getViewport({ scale: 1 })
+        setPdfPageRatio(baseViewport.width / baseViewport.height)
+
+        const canvas = pdfCanvasRef.current
+        const stage = stageRef.current
+        if (!canvas || !stage) return
+
+        const cssWidth = Math.max(1, stage.clientWidth)
+        const scale = cssWidth / baseViewport.width
+        const viewport = page.getViewport({ scale })
+        const pixelRatio = window.devicePixelRatio || 1
+
+        canvas.width = Math.floor(viewport.width * pixelRatio)
+        canvas.height = Math.floor(viewport.height * pixelRatio)
+        canvas.style.width = viewport.width + 'px'
+        canvas.style.height = viewport.height + 'px'
+
+        const context = canvas.getContext('2d', { alpha: false })
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+
+        renderTask = page.render({
+          canvasContext: context,
+          viewport,
+        })
+        await renderTask.promise
+      } catch (error) {
+        if (!cancelled && error?.name !== 'RenderingCancelledException') {
+          onToast({ tone: 'error', message: 'Non è stato possibile renderizzare la pagina PDF nell’editor.' })
+        }
+      }
+    }
+
+    void renderPdfPage()
+
+    resizeObserver = new ResizeObserver(() => {
+      if (renderTask) {
+        try {
+          renderTask.cancel()
+        } catch {
+          // Nessuna azione necessaria.
+        }
+      }
+      void renderPdfPage()
+    })
+    resizeObserver.observe(stageRef.current)
+
+    return () => {
+      cancelled = true
+      resizeObserver?.disconnect()
+      try {
+        renderTask?.cancel()
+      } catch {
+        // Nessuna azione necessaria.
+      }
+      try {
+        loadingTask?.destroy()
+      } catch {
+        // Nessuna azione necessaria.
+      }
+    }
+  }, [pdfPageBlob])
 
   const groups = useMemo(() => {
     const map = new Map()
@@ -737,13 +812,17 @@ export default function QuestionarioManager({ idAvis, onToast }) {
               </div>
 
               <div className="questionnaire-layout-workspace">
-              <div className="pdf-layout-stage" ref={stageRef}>
+              <div
+                className="pdf-layout-stage"
+                ref={stageRef}
+                style={{ aspectRatio: pdfPageRatio }}
+              >
                 {pdfPageLoading ? (
                   <div className="pdf-layout-placeholder">Caricamento pagina {layoutPage}…</div>
-                ) : pdfPageUrl ? (
-                  <object
-                    data={pdfPageUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=Fit'}
-                    type="application/pdf"
+                ) : pdfPageBlob ? (
+                  <canvas
+                    ref={pdfCanvasRef}
+                    className="pdf-layout-canvas"
                     aria-label={'Pagina ' + layoutPage + ' questionario'}
                   />
                 ) : (
