@@ -31,6 +31,27 @@ function fileToDataUrl(file) {
   })
 }
 
+function layoutFieldPreview(key) {
+  const normalized = String(key || '').trim().toLowerCase()
+  const examples = {
+    'donatore.nome': 'Mario',
+    'donatore.cognome': 'Rossi',
+    'donatore.codice_fiscale': 'RSSMRA80A01F158X',
+    'donatore.data_nascita': '01/01/1980',
+    'donatore.email': 'mario.rossi@email.it',
+    'donatore.telefono': '333 1234567',
+    'questionario.data': '14/09/2026',
+    'raccolta.data': '14/09/2026',
+    'firma.donatore': 'Firma donatore',
+    'firma.medico': 'Firma medico',
+  }
+
+  if (examples[normalized]) return examples[normalized]
+  if (normalized.startsWith('domanda:')) return normalized.includes(':si') || normalized.includes(':no') ? 'X' : 'SI'
+  if (normalized.startsWith('dettaglio:')) return 'Dettaglio risposta'
+  return String(key || 'Campo')
+}
+
 export default function QuestionarioManager({ idAvis, onToast }) {
   const [section, setSection] = useState('domande')
   const [questions, setQuestions] = useState([])
@@ -49,7 +70,9 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [layoutPage, setLayoutPage] = useState(1)
   const [selectedFieldIndex, setSelectedFieldIndex] = useState(null)
   const [newFieldKey, setNewFieldKey] = useState('')
+  const [layoutDirty, setLayoutDirty] = useState(false)
   const stageRef = useRef(null)
+  const layoutRef = useRef([])
 
   const [query, setQuery] = useState('')
   const [importing, setImporting] = useState(false)
@@ -93,7 +116,10 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     setLayoutLoading(true)
     try {
       const result = await caricaLayoutQuestionarioAvis(idAvis)
-      setLayout(Array.isArray(result?.campi) ? result.campi : [])
+      const rows = Array.isArray(result?.campi) ? result.campi : []
+      setLayout(rows)
+      layoutRef.current = rows
+      setLayoutDirty(false)
       setSelectedFieldIndex(null)
     } catch (error) {
       setLayout([])
@@ -106,6 +132,10 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   useEffect(() => {
     void Promise.all([loadQuestions(), loadPdf(), loadLayout()])
   }, [idAvis])
+
+  useEffect(() => {
+    layoutRef.current = layout
+  }, [layout])
 
   const groups = useMemo(() => {
     const map = new Map()
@@ -225,20 +255,32 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
     setLayout((current) => {
       const next = [...current, field]
+      layoutRef.current = next
       setSelectedFieldIndex(next.length - 1)
       return next
     })
+    setLayoutDirty(true)
     setNewFieldKey('')
   }
 
   function updateField(index, patch) {
-    setLayout((current) => current.map((field, currentIndex) => (
-      currentIndex === index ? { ...field, ...patch } : field
-    )))
+    setLayout((current) => {
+      const next = current.map((field, currentIndex) => (
+        currentIndex === index ? { ...field, ...patch } : field
+      ))
+      layoutRef.current = next
+      return next
+    })
+    setLayoutDirty(true)
   }
 
   function removeField(index) {
-    setLayout((current) => current.filter((_, currentIndex) => currentIndex !== index))
+    setLayout((current) => {
+      const next = current.filter((_, currentIndex) => currentIndex !== index)
+      layoutRef.current = next
+      return next
+    })
+    setLayoutDirty(true)
     setSelectedFieldIndex(null)
   }
 
@@ -246,7 +288,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     if (!stageRef.current) return
 
     const rect = stageRef.current.getBoundingClientRect()
-    const field = layout[index]
+    const field = layoutRef.current[index]
     if (!field || rect.width <= 0 || rect.height <= 0) return
 
     const startX = event.clientX
@@ -255,6 +297,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     const initialY = Number(field.y)
     const pointerId = event.pointerId
     const target = event.currentTarget
+    let moved = false
 
     target.setPointerCapture(pointerId)
 
@@ -263,17 +306,24 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       const dy = (moveEvent.clientY - startY) / rect.height
       const maxX = Math.max(0, 1 - Number(field.larghezza))
       const maxY = Math.max(0, 1 - Number(field.altezza))
+      const x = Math.min(maxX, Math.max(0, initialX + dx))
+      const y = Math.min(maxY, Math.max(0, initialY + dy))
 
-      updateField(index, {
-        x: Math.min(maxX, Math.max(0, initialX + dx)),
-        y: Math.min(maxY, Math.max(0, initialY + dy)),
-      })
+      moved = moved || Math.abs(x - initialX) > 0.0001 || Math.abs(y - initialY) > 0.0001
+      updateField(index, { x, y })
     }
 
     const up = () => {
       target.removeEventListener('pointermove', move)
       target.removeEventListener('pointerup', up)
       target.removeEventListener('pointercancel', up)
+
+      if (moved) {
+        void saveLayout(layoutRef.current, {
+          reload: false,
+          successMessage: 'Posizione salvata automaticamente.',
+        })
+      }
     }
 
     target.addEventListener('pointermove', move)
@@ -281,14 +331,17 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     target.addEventListener('pointercancel', up)
   }
 
-  async function saveLayout() {
+  async function saveLayout(layoutToSave = layoutRef.current, options = {}) {
     if (layoutSaving) return
+    const { reload = true, successMessage = 'Layout PDF salvato correttamente.' } = options
     setLayoutSaving(true)
     try {
-      const result = await salvaLayoutQuestionarioAvis(idAvis, layout)
-      await loadLayout()
-      onToast({ tone: 'success', message: result.message || 'Layout PDF salvato correttamente.' })
+      const result = await salvaLayoutQuestionarioAvis(idAvis, layoutToSave)
+      setLayoutDirty(false)
+      if (reload) await loadLayout()
+      onToast({ tone: 'success', message: successMessage || result.message || 'Layout PDF salvato correttamente.' })
     } catch (error) {
+      setLayoutDirty(true)
       onToast({ tone: 'error', message: error.message || 'Non è stato possibile salvare il layout.' })
     } finally {
       setLayoutSaving(false)
@@ -521,8 +574,8 @@ export default function QuestionarioManager({ idAvis, onToast }) {
             </label>
 
             <button type="button" className="secondary-button" onClick={addLayoutField}>Aggiungi campo</button>
-            <button type="button" className="primary-button" onClick={() => void saveLayout()} disabled={layoutSaving}>
-              {layoutSaving ? 'Salvataggio…' : 'Salva layout'}
+            <button type="button" className="primary-button" onClick={() => void saveLayout()} disabled={layoutSaving || !layoutDirty}>
+              {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva layout' : 'Layout salvato'}
             </button>
           </div>
 
@@ -542,6 +595,12 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                 )}
 
                 <div className="pdf-layout-overlay">
+                  {selectedField && Number(selectedField.pagina) === Number(layoutPage) ? (
+                    <>
+                      <span className="pdf-layout-guide is-vertical" style={{ left: Number(selectedField.x) * 100 + '%' }} />
+                      <span className="pdf-layout-guide is-horizontal" style={{ top: Number(selectedField.y) * 100 + '%' }} />
+                    </>
+                  ) : null}
                   {pageFields.map(({ field, index }) => (
                     <button
                       type="button"
@@ -558,7 +617,9 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         handleDrag(index, event)
                       }}
                     >
-                      {field.chiave_campo}
+                      <span className="pdf-layout-field-key">{field.chiave_campo}</span>
+                      <span className="pdf-layout-field-preview">{layoutFieldPreview(field.chiave_campo)}</span>
+                      <span className="pdf-layout-anchor" aria-hidden="true" />
                     </button>
                   ))}
                 </div>
@@ -623,9 +684,26 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                       </label>
                     </div>
 
-                    <p className="layout-coordinate-note">
-                      Posizione: X {(Number(selectedField.x) * 100).toFixed(1)}% · Y {(Number(selectedField.y) * 100).toFixed(1)}%
-                    </p>
+                    <div className="layout-position-panel">
+                      <div className="layout-position-heading">
+                        <div>
+                          <strong>Posizione sul PDF</strong>
+                          <span>Il punto rosso indica l'angolo da cui il renderer inizia a scrivere.</span>
+                        </div>
+                        <span className={layoutDirty ? 'layout-save-state is-dirty' : 'layout-save-state is-saved'}>
+                          {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Da salvare' : 'Salvato'}
+                        </span>
+                      </div>
+                      <div className="layout-coordinate-grid">
+                        <span><small>Sinistra</small><strong>{(Number(selectedField.x) * 100).toFixed(2)}%</strong></span>
+                        <span><small>Alto</small><strong>{(Number(selectedField.y) * 100).toFixed(2)}%</strong></span>
+                        <span><small>Larghezza</small><strong>{(Number(selectedField.larghezza) * 100).toFixed(2)}%</strong></span>
+                        <span><small>Altezza</small><strong>{(Number(selectedField.altezza) * 100).toFixed(2)}%</strong></span>
+                      </div>
+                      <button type="button" className="primary-button layout-save-position" onClick={() => void saveLayout()} disabled={layoutSaving || !layoutDirty}>
+                        {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva posizione' : 'Posizione salvata'}
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <div className="questionnaire-editor-empty">
