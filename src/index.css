@@ -262,6 +262,31 @@ button {
   font-weight: 700;
 }
 
+.portal-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 11px;
+  margin-right: 8px;
+  border: 1px solid #dce3ee;
+  border-radius: 11px;
+  background: #fff;
+  color: #334155;
+  font-weight: 800;
+}
+
+.portal-theme-toggle:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.portal-theme-toggle > span:first-child {
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .portal-status-dot {
   width: 9px;
   height: 9px;
@@ -2330,4 +2355,228 @@ button {
   .pdf-layout-stage {
     border-radius: 10px;
   }
+}
+
+
+/* Modalità scura Portal */
+.portal-app.is-dark {
+  color: #e5edf8;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 30%),
+    #0b1220;
+}
+
+.portal-app.is-dark .portal-main {
+  background: transparent;
+}
+
+.portal-app.is-dark .portal-sidebar {
+  background: #07101f;
+}
+
+.portal-app.is-dark .portal-topbar {
+  border-bottom-color: #24324a;
+  background: rgba(11, 18, 32, 0.9);
+}
+
+.portal-app.is-dark .portal-topbar h1,
+.portal-app.is-dark h2,
+.portal-app.is-dark h3,
+.portal-app.is-dark h4,
+.portal-app.is-dark strong,
+.portal-app.is-dark .avis-detail-row strong,
+.portal-app.is-dark .questionnaire-page-nav-copy strong,
+.portal-app.is-dark .layout-coordinate-grid strong {
+  color: #f8fafc;
+}
+
+.portal-app.is-dark .portal-breadcrumb,
+.portal-app.is-dark .portal-topbar-actions,
+.portal-app.is-dark .muted-copy,
+.portal-app.is-dark .avis-card p,
+.portal-app.is-dark .avis-detail-hero p,
+.portal-app.is-dark .questionnaire-summary span,
+.portal-app.is-dark .questionnaire-loading,
+.portal-app.is-dark .questionnaire-empty,
+.portal-app.is-dark .questionnaire-editor-empty,
+.portal-app.is-dark .questionnaire-options > span,
+.portal-app.is-dark .questionnaire-section > header p,
+.portal-app.is-dark .questionnaire-pdf-actions p,
+.portal-app.is-dark .questionnaire-import-card p,
+.portal-app.is-dark .questionnaire-danger-card p,
+.portal-app.is-dark .layout-position-heading > div > span,
+.portal-app.is-dark .layout-coordinate-grid small,
+.portal-app.is-dark .avis-logo-actions p {
+  color: #94a3b8;
+}
+
+.portal-app.is-dark .hero-panel,
+.portal-app.is-dark .page-intro,
+.portal-app.is-dark .stat-card,
+.portal-app.is-dark .panel-card,
+.portal-app.is-dark .avis-card,
+.portal-app.is-dark .avis-detail-hero,
+.portal-app.is-dark .questionnaire-section,
+.portal-app.is-dark .questionnaire-editor,
+.portal-app.is-dark .questionnaire-pdf-actions,
+.portal-app.is-dark .questionnaire-import-card,
+.portal-app.is-dark .layout-field-editor,
+.portal-app.is-dark .questionnaire-page-nav,
+.portal-app.is-dark .layout-position-panel,
+.portal-app.is-dark .avis-summary,
+.portal-app.is-dark .avis-logo-preview {
+  border-color: #26364f;
+  background: #111c2e;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.portal-app.is-dark .hero-panel,
+.portal-app.is-dark .page-intro {
+  background:
+    linear-gradient(135deg, rgba(17, 28, 46, 0.98), rgba(20, 40, 70, 0.92)),
+    #111c2e;
+}
+
+.portal-app.is-dark .quick-actions button,
+.portal-app.is-dark .service-status-card,
+.portal-app.is-dark .questionnaire-section > header,
+.portal-app.is-dark .questionnaire-subtabs,
+.portal-app.is-dark .questionnaire-question-order,
+.portal-app.is-dark .layout-coordinate-grid > span {
+  border-color: #26364f;
+  background: #162337;
+  color: #dbe7f6;
+}
+
+.portal-app.is-dark .quick-actions button:hover,
+.portal-app.is-dark .questionnaire-question:hover,
+.portal-app.is-dark .secondary-button:hover,
+.portal-app.is-dark .questionnaire-page-buttons button:hover,
+.portal-app.is-dark .portal-theme-toggle:hover {
+  border-color: #365b91;
+  background: #1b3151;
+  color: #dbeafe;
+}
+
+.portal-app.is-dark .questionnaire-question {
+  border-bottom-color: #24324a;
+  background: #111c2e;
+  color: #e5edf8;
+}
+
+.portal-app.is-dark .questionnaire-question.is-selected {
+  background: #142a48;
+}
+
+.portal-app.is-dark .questionnaire-subtabs button {
+  color: #94a3b8;
+}
+
+.portal-app.is-dark .questionnaire-subtabs button.is-active,
+.portal-app.is-dark .avis-tabs button.is-active {
+  background: #1b3151;
+  color: #93c5fd;
+}
+
+.portal-app.is-dark .avis-tabs {
+  border-color: #26364f;
+  background: #162337;
+}
+
+.portal-app.is-dark .avis-tabs button {
+  color: #94a3b8;
+}
+
+.portal-app.is-dark .avis-tabs button:hover {
+  background: #1b3151;
+  color: #dbeafe;
+}
+
+.portal-app.is-dark .portal-field input,
+.portal-app.is-dark .portal-field textarea,
+.portal-app.is-dark .portal-field select,
+.portal-app.is-dark .secondary-button,
+.portal-app.is-dark .questionnaire-page-buttons button,
+.portal-app.is-dark .portal-menu-button,
+.portal-app.is-dark .portal-theme-toggle {
+  border-color: #33445f;
+  background: #0f1a2c;
+  color: #e5edf8;
+}
+
+.portal-app.is-dark .portal-field input::placeholder,
+.portal-app.is-dark .portal-field textarea::placeholder {
+  color: #64748b;
+}
+
+.portal-app.is-dark .portal-toggle-card {
+  border-color: #26364f;
+  background: #111c2e;
+}
+
+.portal-app.is-dark .questionnaire-page-buttons button.is-active {
+  border-color: #3b82f6;
+  background: #2563eb;
+  color: #fff;
+}
+
+.portal-app.is-dark .avis-detail-list {
+  border-top-color: #24324a;
+}
+
+.portal-app.is-dark .avis-detail-row {
+  border-bottom-color: #24324a;
+}
+
+.portal-app.is-dark .questionnaire-pdf-preview {
+  border-color: #26364f;
+  background: #0f1a2c;
+}
+
+.portal-app.is-dark .questionnaire-danger-card {
+  border-color: #7f1d1d;
+  background: #2a1519;
+}
+
+.portal-app.is-dark .questionnaire-reset-confirm,
+.portal-app.is-dark .avis-logo-confirm {
+  border-color: #7f1d1d;
+  background: #201317;
+}
+
+.portal-app.is-dark .portal-toast {
+  background: #111c2e;
+}
+
+.portal-app.is-dark .section-kicker,
+.portal-app.is-dark .feature-badge,
+.portal-app.is-dark .avis-card-link,
+.portal-app.is-dark .text-button {
+  color: #60a5fa;
+}
+
+.portal-app.is-dark .questionnaire-section-count,
+.portal-app.is-dark .empty-icon,
+.portal-app.is-dark .avis-card-mark {
+  background: #183153;
+  color: #93c5fd;
+}
+
+.portal-app.is-dark .pdf-layout-stage,
+.portal-app.is-dark .pdf-layout-stage > object {
+  background: #fff;
+}
+
+.portal-app.is-dark .pdf-layout-placeholder {
+  background: #111827;
+  color: #cbd5e1;
+}
+
+.portal-app.is-dark .questionnaire-query {
+  border-color: #33445f;
+  background: #060d18;
+}
+
+.portal-app.is-dark .portal-theme-toggle-label {
+  color: inherit;
 }
