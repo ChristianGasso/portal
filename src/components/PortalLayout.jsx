@@ -15,6 +15,7 @@ function getInitials(user) {
 
 export default function PortalLayout({ activePage, onNavigate, user, onLogout, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('portal-sidebar-collapsed') === '1')
   const current = useMemo(
     () => navigation.find((item) => item.key === activePage) ?? navigation[0],
     [activePage],
@@ -24,17 +25,30 @@ export default function PortalLayout({ activePage, onNavigate, user, onLogout, c
     setMobileOpen(false)
   }, [activePage])
 
+  useEffect(() => {
+    localStorage.setItem('portal-sidebar-collapsed', sidebarCollapsed ? '1' : '0')
+  }, [sidebarCollapsed])
+
   const displayName = [user?.nome, user?.cognome].filter(Boolean).join(' ') || 'Amministratore'
 
   return (
-    <div className="portal-app">
+    <div className={`portal-app ${sidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
       <aside className={`portal-sidebar ${mobileOpen ? 'is-open' : ''}`}>
         <div className="portal-brand">
           <div className="portal-brand-mark">SP</div>
-          <div>
+          <div className="portal-brand-copy">
             <strong>SanguePro</strong>
             <span>Portal amministrativo</span>
           </div>
+          <button
+            type="button"
+            className="portal-sidebar-toggle"
+            aria-label={sidebarCollapsed ? 'Espandi sidebar' : 'Comprimi sidebar'}
+            title={sidebarCollapsed ? 'Espandi sidebar' : 'Comprimi sidebar'}
+            onClick={() => setSidebarCollapsed((current) => !current)}
+          >
+            {sidebarCollapsed ? '›' : '‹'}
+          </button>
         </div>
 
         <nav className="portal-nav" aria-label="Navigazione principale">
@@ -46,7 +60,7 @@ export default function PortalLayout({ activePage, onNavigate, user, onLogout, c
               onClick={() => onNavigate(item.key)}
             >
               <span className="portal-nav-icon" aria-hidden="true">{item.icon}</span>
-              <span>{item.label}</span>
+              <span className="portal-nav-label">{item.label}</span>
             </button>
           ))}
         </nav>
