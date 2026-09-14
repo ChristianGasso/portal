@@ -1878,6 +1878,144 @@ button {
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
 }
 
+.pdf-layout-guide {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  background: rgba(220, 38, 38, 0.5);
+}
+
+.pdf-layout-guide.is-vertical {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.pdf-layout-guide.is-horizontal {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.pdf-layout-field-key,
+.pdf-layout-field-preview {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-layout-field-key {
+  font-size: 0.56rem;
+  line-height: 1.05;
+  opacity: 0.72;
+}
+
+.pdf-layout-field-preview {
+  margin-top: 2px;
+  color: #111827;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.pdf-layout-field.is-selected .pdf-layout-field-preview {
+  color: #7f1d1d;
+}
+
+.pdf-layout-anchor {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #dc2626;
+  box-shadow: 0 0 0 1px #dc2626;
+  pointer-events: none;
+}
+
+.layout-position-panel {
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #dbe5f4;
+  border-radius: 13px;
+  background: #f8fbff;
+}
+
+.layout-position-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.layout-position-heading strong,
+.layout-position-heading span {
+  display: block;
+}
+
+.layout-position-heading > div > span {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.layout-save-state {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.layout-save-state.is-dirty {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.layout-save-state.is-saved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.layout-coordinate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.layout-coordinate-grid > span {
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.layout-coordinate-grid small,
+.layout-coordinate-grid strong {
+  display: block;
+}
+
+.layout-coordinate-grid small {
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.layout-coordinate-grid strong {
+  margin-top: 2px;
+  color: #0f172a;
+  font-size: 0.8rem;
+}
+
+.layout-save-position {
+  width: 100%;
+}
+
 .layout-field-editor {
   position: sticky;
   top: 112px;
