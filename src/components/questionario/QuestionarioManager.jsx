@@ -7,6 +7,7 @@ import {
   importaQuestionarioAvis,
   resetQuestionarioAvis,
   salvaLayoutQuestionarioAvis,
+  scaricaAnteprimaQuestionarioAvis,
 } from '../../services/avisService'
 
 function ToggleCard({ label, description, checked, onChange, disabled }) {
@@ -67,6 +68,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [layout, setLayout] = useState([])
   const [layoutLoading, setLayoutLoading] = useState(false)
   const [layoutSaving, setLayoutSaving] = useState(false)
+  const [previewDownloading, setPreviewDownloading] = useState(false)
   const [layoutPage, setLayoutPage] = useState(1)
   const [selectedFieldIndex, setSelectedFieldIndex] = useState(null)
   const [newFieldKey, setNewFieldKey] = useState('')
@@ -348,6 +350,28 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     }
   }
 
+  async function downloadPreviewPdf() {
+    if (previewDownloading) return
+    if (!pdf.presente) {
+      onToast({ tone: 'error', message: 'Carica prima il PDF di partenza.' })
+      return
+    }
+    if (!layout.length) {
+      onToast({ tone: 'error', message: 'Aggiungi almeno un campo al layout.' })
+      return
+    }
+
+    setPreviewDownloading(true)
+    try {
+      await scaricaAnteprimaQuestionarioAvis(idAvis, layoutRef.current)
+      onToast({ tone: 'success', message: 'PDF di prova scaricato correttamente.' })
+    } catch (error) {
+      onToast({ tone: 'error', message: error.message || 'Non è stato possibile generare il PDF di prova.' })
+    } finally {
+      setPreviewDownloading(false)
+    }
+  }
+
   async function importQuery() {
     if (!query.trim() || importing) return
     setImporting(true)
@@ -574,6 +598,9 @@ export default function QuestionarioManager({ idAvis, onToast }) {
             </label>
 
             <button type="button" className="secondary-button" onClick={addLayoutField}>Aggiungi campo</button>
+            <button type="button" className="secondary-button" onClick={() => void downloadPreviewPdf()} disabled={previewDownloading || !pdf.presente || !layout.length}>
+              {previewDownloading ? 'Preparazione PDF…' : 'Scarica PDF di prova'}
+            </button>
             <button type="button" className="primary-button" onClick={() => void saveLayout()} disabled={layoutSaving || !layoutDirty}>
               {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva layout' : 'Layout salvato'}
             </button>
