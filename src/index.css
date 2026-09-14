@@ -2027,21 +2027,17 @@ button {
 .pdf-layout-field {
   position: absolute;
   z-index: 4;
-  display: block;
+  display: flex;
+  align-items: center;
   min-width: 24px;
   min-height: 18px;
-  overflow: hidden;
-  padding: 2px 5px;
-  border: 1px solid rgba(37, 99, 235, 0.75);
-  border-radius: 4px;
-  background: rgba(219, 234, 254, 0.78);
-  color: #1e40af;
-  font-size: 0.64rem;
-  font-weight: 850;
-  line-height: 1.1;
+  overflow: visible;
+  padding: 0 5px;
+  border: 1px solid rgba(37, 99, 235, 0.78);
+  border-radius: 3px;
+  background: rgba(219, 234, 254, 0.42);
+  color: #111827;
   text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   cursor: grab;
   touch-action: none;
   pointer-events: auto;
@@ -2054,9 +2050,9 @@ button {
 
 .pdf-layout-field.is-selected {
   border: 2px solid #dc2626;
-  background: rgba(254, 226, 226, 0.84);
-  color: #991b1b;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
+  background: rgba(254, 226, 226, 0.32);
+  color: #111827;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
 }
 
 .pdf-layout-guide {
@@ -2078,30 +2074,38 @@ button {
   height: 1px;
 }
 
-.pdf-layout-field-key,
+.pdf-layout-field-label {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 4px);
+  max-width: max(150px, 100%);
+  overflow: hidden;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 850;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .pdf-layout-field-preview {
   display: block;
+  width: 100%;
   overflow: hidden;
+  color: #111827;
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.pdf-layout-field-key {
-  font-size: 0.56rem;
-  line-height: 1.05;
-  opacity: 0.72;
-}
-
-.pdf-layout-field-preview {
-  margin-top: 2px;
-  color: #111827;
-  font-size: 0.7rem;
-  font-weight: 900;
-  line-height: 1.05;
-}
-
 .pdf-layout-field.is-selected .pdf-layout-field-preview {
-  color: #7f1d1d;
+  color: #111827;
 }
 
 .pdf-layout-anchor {
