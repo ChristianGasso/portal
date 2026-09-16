@@ -1908,6 +1908,18 @@ button {
   margin-top: 24px;
 }
 
+.questionnaire-layout-sticky {
+  position: sticky;
+  top: 76px;
+  z-index: 12;
+  display: grid;
+  gap: 12px;
+  padding: 10px 0 12px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 .questionnaire-layout-toolbar {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) auto auto auto;
@@ -2566,6 +2578,10 @@ button {
 .portal-app.is-dark .avis-card-mark {
   background: #183153;
   color: #93c5fd;
+}
+
+.portal-app.is-dark .questionnaire-layout-sticky {
+  background: rgba(17, 28, 46, 0.96);
 }
 
 .portal-app.is-dark .pdf-layout-stage,
