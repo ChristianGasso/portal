@@ -834,27 +834,24 @@ export default function QuestionarioManager({ idAvis, onToast }) {
         <div className="questionnaire-layout-editor">
           <div className="questionnaire-layout-sticky">
             <div className="questionnaire-layout-toolbar">
-            <label className="portal-field layout-key-field">
-              <span>Nuovo campo</span>
-              <input list="questionnaire-field-keys" value={newFieldKey} onChange={(event) => setNewFieldKey(event.target.value)} placeholder="es. donatore.nome" />
-              <datalist id="questionnaire-field-keys">
-                {fieldSuggestions.map((key) => <option key={key} value={key} />)}
-              </datalist>
-            </label>
+              <label className="portal-field layout-key-field">
+                <span>Nuovo campo</span>
+                <input list="questionnaire-field-keys" value={newFieldKey} onChange={(event) => setNewFieldKey(event.target.value)} placeholder="es. donatore.nome" />
+                <datalist id="questionnaire-field-keys">
+                  {fieldSuggestions.map((key) => <option key={key} value={key} />)}
+                </datalist>
+              </label>
 
-            <button type="button" className="secondary-button" onClick={addLayoutField}>Aggiungi campo</button>
-            <button type="button" className="secondary-button" onClick={() => void downloadPreviewPdf()} disabled={previewDownloading || !pdf.presente || !layout.length}>
-              {previewDownloading ? 'Preparazione PDF…' : 'Apri PDF di prova'}
-            </button>
-            <button type="button" className="primary-button" onClick={() => void saveLayout()} disabled={layoutSaving || !layoutDirty}>
-              {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva layout' : 'Layout salvato'}
-            </button>
-          </div>
+              <button type="button" className="secondary-button" onClick={addLayoutField}>Aggiungi campo</button>
+              <button type="button" className="secondary-button" onClick={() => void downloadPreviewPdf()} disabled={previewDownloading || !pdf.presente || !layout.length}>
+                {previewDownloading ? 'Preparazione PDF…' : 'Apri PDF di prova'}
+              </button>
+              <button type="button" className="primary-button" onClick={() => void saveLayout()} disabled={layoutSaving || !layoutDirty}>
+                {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva layout' : 'Layout salvato'}
+              </button>
+            </div>
 
-          {layoutLoading ? (
-            <div className="questionnaire-loading">Caricamento layout…</div>
-          ) : (
-            <>
+            {!layoutLoading ? (
               <div className="questionnaire-page-nav" aria-label="Pagine del questionario">
                 <div className="questionnaire-page-nav-copy">
                   <span className="section-kicker">PAGINA PDF</span>
@@ -876,8 +873,13 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                   ))}
                 </div>
               </div>
+            ) : null}
           </div>
 
+          {layoutLoading ? (
+            <div className="questionnaire-loading">Caricamento layout…</div>
+          ) : (
+            <>
               <div className="questionnaire-layout-workspace">
               <div
                 className="pdf-layout-stage"
