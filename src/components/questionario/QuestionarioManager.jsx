@@ -68,6 +68,12 @@ function layoutFieldPreview(key) {
   return String(key || 'Campo')
 }
 
+function questionCodeFromLayoutKey(key) {
+  const parts = String(key || '').trim().split(':')
+  if (parts[0]?.toLowerCase() !== 'domanda' || !parts[1]) return null
+  return parts[1].toUpperCase()
+}
+
 function layoutFieldLabel(key) {
   const normalized = String(key || '').trim().toLowerCase()
   const labels = {
@@ -418,6 +424,20 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     .filter(({ field }) => Number(field.pagina) === Number(layoutPage))
 
   const selectedField = selectedFieldIndex === null ? null : layout[selectedFieldIndex] || null
+
+  const questionByCode = useMemo(() => {
+    const map = new Map()
+    for (const question of questions) {
+      const code = String(question.codice || '').trim().toUpperCase()
+      if (code) map.set(code, question)
+    }
+    return map
+  }, [questions])
+
+  const newFieldQuestion = questionByCode.get(questionCodeFromLayoutKey(newFieldKey)) || null
+  const selectedFieldQuestion = selectedField
+    ? questionByCode.get(questionCodeFromLayoutKey(selectedField.chiave_campo)) || null
+    : null
 
   async function saveQuestion() {
     if (!questionDraft || questionSaving) return
@@ -844,8 +864,17 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                 <span>Nuovo campo</span>
                 <input list="questionnaire-field-keys" value={newFieldKey} onChange={(event) => setNewFieldKey(event.target.value)} placeholder="es. donatore.nome" />
                 <datalist id="questionnaire-field-keys">
-                  {fieldSuggestions.map((key) => <option key={key} value={key} />)}
+                  {fieldSuggestions.map((key) => {
+                    const question = questionByCode.get(questionCodeFromLayoutKey(key))
+                    return <option key={key} value={key} label={question?.testo || undefined} />
+                  })}
                 </datalist>
+                {newFieldQuestion ? (
+                  <span className="layout-question-reference">
+                    <strong>{newFieldQuestion.codice}</strong>
+                    <span>{newFieldQuestion.testo}</span>
+                  </span>
+                ) : null}
               </label>
 
               <button type="button" className="secondary-button" onClick={addLayoutField}>Aggiungi campo</button>
@@ -951,6 +980,12 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                       <div>
                         <span className="section-kicker">CAMPO</span>
                         <h4>{selectedField.chiave_campo}</h4>
+                        {selectedFieldQuestion ? (
+                          <div className="layout-question-reference is-selected-field">
+                            <strong>Domanda {selectedFieldQuestion.codice}</strong>
+                            <span>{selectedFieldQuestion.testo}</span>
+                          </div>
+                        ) : null}
                       </div>
                       <button type="button" className="danger-text-button" onClick={() => removeField(selectedFieldIndex)}>
                         Rimuovi
