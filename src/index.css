@@ -1935,6 +1935,29 @@ button {
   min-width: 0;
 }
 
+.layout-question-reference {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid #dbe5f4;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #475569;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.layout-question-reference strong {
+  color: #1d4ed8;
+  font-size: 0.68rem;
+}
+
+.layout-question-reference.is-selected-field {
+  margin-top: 8px;
+  max-width: 360px;
+}
+
 
 .questionnaire-page-nav {
   display: flex;
@@ -2530,6 +2553,16 @@ button {
 .portal-app.is-dark .portal-toggle-card {
   border-color: #26364f;
   background: #111c2e;
+}
+
+.portal-app.is-dark .layout-question-reference {
+  border-color: #33445f;
+  background: #0f1a2c;
+  color: #cbd5e1;
+}
+
+.portal-app.is-dark .layout-question-reference strong {
+  color: #93c5fd;
 }
 
 .portal-app.is-dark .questionnaire-page-buttons button.is-active {
