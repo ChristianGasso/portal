@@ -413,9 +413,24 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       'firma.medico',
     ]
 
+    const questionFields = questions.flatMap((question) => {
+      const code = String(question.codice || '').trim()
+      if (!code) return []
+
+      const responseType = String(question.tipo_risposta || '').trim().toUpperCase()
+      if (responseType === 'SI_NO') {
+        return [
+          'domanda:' + code + ':SI',
+          'domanda:' + code + ':NO',
+        ]
+      }
+
+      return ['domanda:' + code]
+    })
+
     return [
       ...fixed,
-      ...questions.map((question) => 'domanda:' + question.codice),
+      ...questionFields,
     ]
   }, [questions])
 
@@ -866,7 +881,12 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                 <datalist id="questionnaire-field-keys">
                   {fieldSuggestions.map((key) => {
                     const question = questionByCode.get(questionCodeFromLayoutKey(key))
-                    return <option key={key} value={key} label={question?.testo || undefined} />
+                    const answer = String(key).split(':')[2]?.toUpperCase() || ''
+                    const answerLabel = answer === 'SI' ? 'Sì' : answer === 'NO' ? 'No' : ''
+                    const label = question
+                      ? [answerLabel, question.testo].filter(Boolean).join(' — ')
+                      : undefined
+                    return <option key={key} value={key} label={label} />
                   })}
                 </datalist>
                 {newFieldQuestion ? (
