@@ -560,7 +560,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       if (moved) {
         void saveLayout(layoutRef.current, {
           reload: false,
-          successMessage: 'Posizione salvata automaticamente.',
+          suppressSuccessToast: true,
         })
       }
     }
@@ -572,13 +572,19 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
   async function saveLayout(layoutToSave = layoutRef.current, options = {}) {
     if (layoutSaving) return
-    const { reload = true, successMessage = 'Layout PDF salvato correttamente.' } = options
+    const {
+      reload = true,
+      successMessage = 'Layout PDF salvato correttamente.',
+      suppressSuccessToast = false,
+    } = options
     setLayoutSaving(true)
     try {
       const result = await salvaLayoutQuestionarioAvis(idAvis, layoutToSave)
       setLayoutDirty(false)
       if (reload) await loadLayout()
-      onToast({ tone: 'success', message: successMessage || result.message || 'Layout PDF salvato correttamente.' })
+      if (!suppressSuccessToast) {
+        onToast({ tone: 'success', message: successMessage || result.message || 'Layout PDF salvato correttamente.' })
+      }
     } catch (error) {
       setLayoutDirty(true)
       onToast({ tone: 'error', message: error.message || 'Non è stato possibile salvare il layout.' })
