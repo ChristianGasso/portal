@@ -832,7 +832,8 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
       {section === 'layout' ? (
         <div className="questionnaire-layout-editor">
-          <div className="questionnaire-layout-toolbar">
+          <div className="questionnaire-layout-sticky">
+            <div className="questionnaire-layout-toolbar">
             <label className="portal-field layout-key-field">
               <span>Nuovo campo</span>
               <input list="questionnaire-field-keys" value={newFieldKey} onChange={(event) => setNewFieldKey(event.target.value)} placeholder="es. donatore.nome" />
@@ -875,6 +876,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                   ))}
                 </div>
               </div>
+          </div>
 
               <div className="questionnaire-layout-workspace">
               <div
