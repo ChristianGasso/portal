@@ -1139,8 +1139,34 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         </span>
                       </div>
                       <div className="layout-coordinate-grid">
-                        <span><small>Sinistra</small><strong>{(Number(selectedField.x) * 100).toFixed(2)}%</strong></span>
-                        <span><small>Alto</small><strong>{(Number(selectedField.y) * 100).toFixed(2)}%</strong></span>
+                        <span>
+                          <small>Sinistra</small>
+                          <input
+                            type="number"
+                            min="0"
+                            max={(Math.max(0, 1 - Number(selectedField.larghezza)) * 100).toFixed(2)}
+                            step="0.01"
+                            value={(Number(selectedField.x) * 100).toFixed(2)}
+                            onChange={(event) => updateField(selectedFieldIndex, {
+                              x: Math.max(0, Math.min(1 - Number(selectedField.larghezza), Number(event.target.value) / 100)),
+                            })}
+                            style={{ width: '100%', marginTop: 4, padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: 8, background: 'transparent', color: 'inherit', font: 'inherit' }}
+                          />
+                        </span>
+                        <span>
+                          <small>Alto</small>
+                          <input
+                            type="number"
+                            min="0"
+                            max={(Math.max(0, 1 - Number(selectedField.altezza)) * 100).toFixed(2)}
+                            step="0.01"
+                            value={(Number(selectedField.y) * 100).toFixed(2)}
+                            onChange={(event) => updateField(selectedFieldIndex, {
+                              y: Math.max(0, Math.min(1 - Number(selectedField.altezza), Number(event.target.value) / 100)),
+                            })}
+                            style={{ width: '100%', marginTop: 4, padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: 8, background: 'transparent', color: 'inherit', font: 'inherit' }}
+                          />
+                        </span>
                         <span><small>Larghezza</small><strong>{(Number(selectedField.larghezza) * 100).toFixed(2)}%</strong></span>
                         <span><small>Altezza</small><strong>{(Number(selectedField.altezza) * 100).toFixed(2)}%</strong></span>
                       </div>
