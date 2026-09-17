@@ -97,6 +97,30 @@ function layoutFieldLabel(key) {
   return String(key || 'Campo')
 }
 
+function layoutTypeDefaults(type) {
+  const normalized = String(type || '').trim().toLowerCase()
+
+  if (normalized === 'check') {
+    return {
+      larghezza: 0.01,
+      altezza: 0.01,
+      font_size: 10,
+      allineamento: 'centro',
+    }
+  }
+
+  if (normalized === 'testo') {
+    return {
+      larghezza: 0.157,
+      altezza: 0.032,
+      font_size: 13,
+      allineamento: 'sinistra',
+    }
+  }
+
+  return null
+}
+
 export default function QuestionarioManager({ idAvis, onToast }) {
   const [section, setSection] = useState('domande')
   const [questions, setQuestions] = useState([])
@@ -514,8 +538,9 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       return
     }
 
-    const fieldWidth = 0.25
-    const fieldHeight = 0.04
+    const textDefaults = layoutTypeDefaults('testo')
+    const fieldWidth = textDefaults.larghezza
+    const fieldHeight = textDefaults.altezza
     let fieldX = 0.10
     let fieldY = 0.10
     const stage = stageRef.current
@@ -550,10 +575,10 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       pagina: Number(layoutPage),
       x: fieldX,
       y: fieldY,
-      larghezza: fieldWidth,
-      altezza: fieldHeight,
-      font_size: 10,
-      allineamento: 'sinistra',
+      larghezza: textDefaults.larghezza,
+      altezza: textDefaults.altezza,
+      font_size: textDefaults.font_size,
+      allineamento: textDefaults.allineamento,
       attivo: true,
     }
 
@@ -576,6 +601,21 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       return next
     })
     setLayoutDirty(true)
+  }
+
+  function updateFieldType(index, type) {
+    const field = layoutRef.current[index]
+    const defaults = layoutTypeDefaults(type)
+    const patch = { tipo_campo: type }
+
+    if (field && defaults) {
+      patch.larghezza = Math.max(0.01, Math.min(defaults.larghezza, 1 - Number(field.x)))
+      patch.altezza = Math.max(0.01, Math.min(defaults.altezza, 1 - Number(field.y)))
+      patch.font_size = defaults.font_size
+      patch.allineamento = defaults.allineamento
+    }
+
+    updateField(index, patch)
   }
 
   function removeField(index) {
@@ -1050,7 +1090,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                     <div className="questionnaire-editor-grid">
                       <label className="portal-field">
                         <span>Tipo</span>
-                        <select value={selectedField.tipo_campo} onChange={(event) => updateField(selectedFieldIndex, { tipo_campo: event.target.value })}>
+                        <select value={selectedField.tipo_campo} onChange={(event) => updateFieldType(selectedFieldIndex, event.target.value)}>
                           <option value="testo">Testo</option>
                           <option value="check">Check</option>
                           <option value="firma">Firma</option>
