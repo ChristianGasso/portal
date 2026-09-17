@@ -108,6 +108,35 @@ function findTypeSelect(editor) {
   return null
 }
 
+function findPreviewForKey(key) {
+  if (!key) return null
+
+  for (const field of document.querySelectorAll('.pdf-layout-field')) {
+    const label = field.querySelector('.pdf-layout-field-label')
+    const fieldKey = label?.getAttribute('title')?.trim() || ''
+    if (fieldKey === key) return field.querySelector('.pdf-layout-field-preview')
+  }
+
+  return null
+}
+
+function rememberDefaultPreview(preview) {
+  if (!preview) return
+  if (!preview.dataset.defaultPreview) preview.dataset.defaultPreview = preview.textContent || ''
+}
+
+function applyValueToPreview(key, value) {
+  const preview = findPreviewForKey(key)
+  if (!preview) return
+
+  rememberDefaultPreview(preview)
+  const customValue = typeof value === 'string' ? value : ''
+  const nextValue = customValue || preview.dataset.defaultPreview || ''
+
+  preview.dataset.customPreviewValue = customValue
+  if (preview.textContent !== nextValue) preview.textContent = nextValue
+}
+
 function applyPreviewValues(values) {
   document.querySelectorAll('.pdf-layout-field').forEach((field) => {
     const label = field.querySelector('.pdf-layout-field-label')
@@ -115,12 +144,12 @@ function applyPreviewValues(values) {
     const key = label?.getAttribute('title')?.trim() || ''
     if (!preview || !key) return
 
-    if (!preview.dataset.defaultPreview) {
-      preview.dataset.defaultPreview = preview.textContent || ''
-    }
+    rememberDefaultPreview(preview)
 
     const customValue = typeof values[key] === 'string' ? values[key] : ''
     const nextValue = customValue || preview.dataset.defaultPreview || ''
+    preview.dataset.customPreviewValue = customValue
+
     if (preview.textContent !== nextValue) preview.textContent = nextValue
   })
 }
@@ -155,14 +184,20 @@ function ensurePanel(editor, values, onChangeValue, onClearValue) {
     panel.querySelector('[data-preview-input]')?.addEventListener('input', (event) => {
       const currentKey = findSelectedKey(findEditor())
       if (!currentKey) return
-      onChangeValue(currentKey, event.target.value)
+
+      const value = event.target.value
+      onChangeValue(currentKey, value)
+      applyValueToPreview(currentKey, value)
     })
 
     panel.querySelector('[data-preview-clear]')?.addEventListener('click', () => {
       const currentEditor = findEditor()
       const currentKey = findSelectedKey(currentEditor)
       if (!currentKey) return
+
       onClearValue(currentKey)
+      applyValueToPreview(currentKey, '')
+
       const input = currentEditor?.querySelector('.' + PANEL_CLASS + ' [data-preview-input]')
       if (input) input.value = ''
     })
@@ -172,6 +207,7 @@ function ensurePanel(editor, values, onChangeValue, onClearValue) {
   const storedValue = typeof values[key] === 'string' ? values[key] : ''
   if (input && input.value !== storedValue) input.value = storedValue
 
+  applyValueToPreview(key, storedValue)
   return panel
 }
 
@@ -188,14 +224,16 @@ function initializeQuestionarioTextPreviewValues() {
 
   function setValue(key, value) {
     values = { ...values, [key]: value }
-    persist()
+    writeValues(values)
+    applyValueToPreview(key, value)
   }
 
   function clearValue(key) {
     const next = { ...values }
     delete next[key]
     values = next
-    persist()
+    writeValues(values)
+    applyValueToPreview(key, '')
   }
 
   function sync() {
@@ -231,11 +269,15 @@ function initializeQuestionarioTextPreviewValues() {
     window.requestAnimationFrame(sync)
   }
 
-  const observer = new MutationObserver(scheduleSync)
+  const observer = new MutationObserver(() => {
+    scheduleSync()
+  })
+
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,
     attributes: true,
+    characterData: true,
     attributeFilter: ['class', 'title'],
   })
 
@@ -244,6 +286,10 @@ function initializeQuestionarioTextPreviewValues() {
     values = readValues()
     scheduleSync()
   })
+
+  window.setInterval(() => {
+    applyPreviewValues(values)
+  }, 250)
 
   scheduleSync()
 }
