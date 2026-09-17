@@ -247,7 +247,6 @@ function initializeQuestionarioLayoutEnhancements() {
   installStyle()
 
   let locks = readLocks()
-  let previousFieldCount = 0
   let pendingNewField = false
   let scheduled = false
 
@@ -298,11 +297,6 @@ function initializeQuestionarioLayoutEnhancements() {
     scheduled = false
     disableNativeDragging()
 
-    const fields = document.querySelectorAll('.pdf-layout-overlay .pdf-layout-field')
-    const fieldCount = fields.length
-    if (fieldCount > previousFieldCount) pendingNewField = true
-    previousFieldCount = fieldCount
-
     const editor = findFieldEditor()
     if (!editor) return
 
@@ -324,6 +318,14 @@ function initializeQuestionarioLayoutEnhancements() {
     scheduled = true
     window.requestAnimationFrame(sync)
   }
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest?.('button')
+    if (button?.textContent?.trim() === 'Aggiungi campo') {
+      pendingNewField = true
+      window.requestAnimationFrame(scheduleSync)
+    }
+  }, true)
 
   document.addEventListener('dragstart', (event) => {
     if (event.target.closest?.('.pdf-layout-field')) event.preventDefault()
