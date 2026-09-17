@@ -90,6 +90,40 @@ function portal_questionario_preview_encode(string $text): string
     return $encoded === false ? $text : $encoded;
 }
 
+function portal_questionario_preview_normalize_values(array $values): array
+{
+    if (count($values) > 300) {
+        portal_error('Sono consentiti al massimo 300 valori di anteprima.', 400);
+    }
+
+    $normalized = [];
+
+    foreach ($values as $key => $value) {
+        $key = trim((string)$key);
+
+        if ($key === '' || strlen($key) > 100 || !preg_match('/^[A-Za-z0-9_.:-]+$/', $key)) {
+            continue;
+        }
+
+        if (!is_string($value) && !is_numeric($value)) {
+            continue;
+        }
+
+        $text = trim((string)$value);
+        if ($text === '') {
+            continue;
+        }
+
+        if (mb_strlen($text, 'UTF-8') > 500) {
+            $text = mb_substr($text, 0, 500, 'UTF-8');
+        }
+
+        $normalized[$key] = $text;
+    }
+
+    return $normalized;
+}
+
 function portal_questionario_preview_normalize_fields(array $fields): array
 {
     if (count($fields) > 300) {
@@ -166,10 +200,18 @@ function portal_questionario_preview_normalize_fields(array $fields): array
 function portal_questionario_preview_draw(
     \setasign\Fpdi\Fpdi $pdf,
     array $field,
+    array $previewValues,
     float $pageWidth,
     float $pageHeight
 ): void {
-    $value = portal_questionario_preview_text((string)$field['chiave_campo']);
+    $key = (string)$field['chiave_campo'];
+    $value = (
+        (string)$field['tipo_campo'] === 'testo'
+        && array_key_exists($key, $previewValues)
+    )
+        ? (string)$previewValues[$key]
+        : portal_questionario_preview_text($key);
+
     if ($value === '') {
         return;
     }
@@ -210,6 +252,7 @@ function portal_questionario_preview_draw(
 $input = portal_json_input();
 $idAvis = (int)($input['id_avis'] ?? 0);
 $fields = $input['campi'] ?? null;
+$previewValuesInput = $input['preview_values'] ?? [];
 
 if ($idAvis <= 0) {
     portal_error('Seleziona una AVIS valida.', 400);
@@ -217,6 +260,10 @@ if ($idAvis <= 0) {
 
 if (!is_array($fields)) {
     portal_error('Configurazione layout non valida.', 400);
+}
+
+if (!is_array($previewValuesInput)) {
+    portal_error('Valori anteprima non validi.', 400);
 }
 
 try {
@@ -230,6 +277,8 @@ try {
     }
 
     $layout = portal_questionario_preview_normalize_fields($fields);
+    $previewValues = portal_questionario_preview_normalize_values($previewValuesInput);
+
     if ($layout === []) {
         portal_error('Aggiungi almeno un campo al layout prima di creare il PDF di prova.', 400);
     }
@@ -265,6 +314,7 @@ try {
                 portal_questionario_preview_draw(
                     $pdf,
                     $field,
+                    $previewValues,
                     (float)$size['width'],
                     (float)$size['height']
                 );
