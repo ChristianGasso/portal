@@ -514,14 +514,44 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       return
     }
 
+    const fieldWidth = 0.25
+    const fieldHeight = 0.04
+    let fieldX = 0.10
+    let fieldY = 0.10
+    const stage = stageRef.current
+
+    if (stage) {
+      const rect = stage.getBoundingClientRect()
+      if (rect.width > 0 && rect.height > 0) {
+        const sticky = document.querySelector('.questionnaire-layout-sticky')
+        const stickyRect = sticky?.getBoundingClientRect()
+        const marginPx = 12
+        const visibleTop = Math.max(
+          rect.top,
+          stickyRect ? stickyRect.bottom + marginPx : marginPx,
+          marginPx,
+        )
+        const visibleRight = Math.min(rect.right, window.innerWidth - marginPx)
+
+        fieldX = Math.min(
+          1 - fieldWidth,
+          Math.max(0, (visibleRight - rect.left) / rect.width - fieldWidth),
+        )
+        fieldY = Math.min(
+          1 - fieldHeight,
+          Math.max(0, (visibleTop - rect.top) / rect.height),
+        )
+      }
+    }
+
     const field = {
       chiave_campo: key,
       tipo_campo: 'testo',
       pagina: Number(layoutPage),
-      x: 0.10,
-      y: 0.10,
-      larghezza: 0.25,
-      altezza: 0.04,
+      x: fieldX,
+      y: fieldY,
+      larghezza: fieldWidth,
+      altezza: fieldHeight,
       font_size: 10,
       allineamento: 'sinistra',
       attivo: true,
