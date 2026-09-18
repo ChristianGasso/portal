@@ -166,6 +166,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [newFieldKey, setNewFieldKey] = useState('')
   const [layoutDirty, setLayoutDirty] = useState(false)
   const stageRef = useRef(null)
+  const pdfViewportRef = useRef(null)
   const pdfCanvasRef = useRef(null)
   const layoutRef = useRef([])
 
@@ -723,6 +724,45 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     }
   }
 
+  function handlePdfPan(event) {
+    if (layoutZoom <= 100) return
+    if (event.target.closest?.('.pdf-layout-field')) return
+
+    const viewport = pdfViewportRef.current
+    const target = event.currentTarget
+    if (!viewport) return
+
+    event.preventDefault()
+
+    const pointerId = event.pointerId
+    const startX = event.clientX
+    const startScrollLeft = viewport.scrollLeft
+
+    target.setPointerCapture(pointerId)
+
+    const move = (moveEvent) => {
+      viewport.scrollLeft = startScrollLeft - (moveEvent.clientX - startX)
+    }
+
+    const stop = () => {
+      target.removeEventListener('pointermove', move)
+      target.removeEventListener('pointerup', stop)
+      target.removeEventListener('pointercancel', stop)
+
+      try {
+        if (target.hasPointerCapture(pointerId)) {
+          target.releasePointerCapture(pointerId)
+        }
+      } catch {
+        // Il puntatore può essere già stato rilasciato dal browser.
+      }
+    }
+
+    target.addEventListener('pointermove', move)
+    target.addEventListener('pointerup', stop)
+    target.addEventListener('pointercancel', stop)
+  }
+
   function handleDrag(index, event) {
     if (!stageRef.current) return
 
@@ -1162,10 +1202,11 @@ export default function QuestionarioManager({ idAvis, onToast }) {
           ) : (
             <>
               <div className="questionnaire-layout-workspace">
-              <div className="pdf-layout-viewport">
+              <div className="pdf-layout-viewport" ref={pdfViewportRef}>
                 <div
-                  className="pdf-layout-stage"
+                  className={'pdf-layout-stage ' + (layoutZoom > 100 ? 'is-pannable' : '')}
                   ref={stageRef}
+                  onPointerDown={handlePdfPan}
                   style={{
                     aspectRatio: pdfPageRatio,
                     width: `min(${layoutZoom}%, ${8.4 * layoutZoom}px)`,
