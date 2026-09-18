@@ -70,7 +70,8 @@ function layoutFieldPreview(key) {
 
 function questionCodeFromLayoutKey(key) {
   const parts = String(key || '').trim().split(':')
-  if (parts[0]?.toLowerCase() !== 'domanda' || !parts[1]) return null
+  const prefix = parts[0]?.toLowerCase()
+  if (!['domanda', 'dettaglio'].includes(prefix) || !parts[1]) return null
   return parts[1].toUpperCase()
 }
 
@@ -627,7 +628,6 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     }
 
     const questionCode = questionCodeFromLayoutKey(key)
-      || (key.toLowerCase().startsWith('dettaglio:') ? key.split(':')[1]?.toUpperCase() : null)
     const relatedQuestion = questionCode ? questionByCode.get(questionCode) || null : null
     const targetPage = relatedQuestion
       ? Number(relatedQuestion.pagina_compilazione || layoutPage)
@@ -1075,10 +1075,14 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                 <datalist id="questionnaire-field-keys">
                   {fieldSuggestions.map((key) => {
                     const question = questionByCode.get(questionCodeFromLayoutKey(key))
-                    const answer = String(key).split(':')[2]?.toUpperCase() || ''
+                    const parts = String(key).split(':')
+                    const answer = parts[2]?.toUpperCase() || ''
+                    const isDetail = parts[0]?.toLowerCase() === 'dettaglio'
                     const answerLabel = answer === 'SI' ? 'Sì' : answer === 'NO' ? 'No' : ''
                     const label = question
-                      ? [answerLabel, question.testo].filter(Boolean).join(' — ')
+                      ? isDetail
+                        ? ['Dettaglio', question.etichetta_dettaglio || question.testo].filter(Boolean).join(' — ')
+                        : [answerLabel, question.testo].filter(Boolean).join(' — ')
                       : undefined
                     return <option key={key} value={key} label={label} />
                   })}
