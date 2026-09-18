@@ -183,12 +183,15 @@ export async function salvaLayoutQuestionarioAvis(idAvis, campi) {
     body: JSON.stringify({
       id_avis: Number(idAvis),
       campi,
+      pagina_anteprima: Number.isInteger(Number(paginaAnteprima)) && Number(paginaAnteprima) > 0
+        ? Number(paginaAnteprima)
+        : null,
     }),
   })
 }
 
 
-export async function scaricaAnteprimaQuestionarioAvis(idAvis, campi) {
+export async function scaricaAnteprimaQuestionarioAvis(idAvis, campi, paginaAnteprima = null) {
   const token = getPortalToken()
 
   if (!token) {
