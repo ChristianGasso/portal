@@ -71,6 +71,44 @@ try {
 
     portal_questionario_layout_ensure($pdo);
 
+    if ($method !== 'GET' && (($input['action'] ?? '') === 'delete_field')) {
+        $fieldId = (int)($input['id_campo'] ?? 0);
+        $fieldKey = trim((string)($input['chiave_campo'] ?? ''));
+        $fieldPage = (int)($input['pagina'] ?? 0);
+
+        if ($fieldId > 0) {
+            $deleteField = $pdo->prepare(
+                'DELETE FROM questionario_layout_campi
+                 WHERE id = :id
+                   AND id_avis = :id_avis'
+            );
+            $deleteField->execute([
+                ':id' => $fieldId,
+                ':id_avis' => $scopeId,
+            ]);
+        } elseif ($fieldKey !== '' && $fieldPage > 0) {
+            $deleteField = $pdo->prepare(
+                'DELETE FROM questionario_layout_campi
+                 WHERE id_avis = :id_avis
+                   AND chiave_campo = :chiave_campo
+                   AND pagina = :pagina'
+            );
+            $deleteField->execute([
+                ':id_avis' => $scopeId,
+                ':chiave_campo' => $fieldKey,
+                ':pagina' => $fieldPage,
+            ]);
+        } else {
+            portal_error('Campo layout da rimuovere non valido.', 400);
+        }
+
+        portal_json([
+            'success' => true,
+            'message' => 'Campo rimosso dal layout.',
+            'deleted' => $deleteField->rowCount(),
+        ]);
+    }
+
     if ($method === 'GET') {
         $stmt = $pdo->prepare(
             'SELECT id, chiave_campo, tipo_campo, pagina, x, y, larghezza, altezza,
