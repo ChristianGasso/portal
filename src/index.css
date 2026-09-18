@@ -319,6 +319,83 @@ body.portal-questionario-active .portal-content {
 
 body.portal-questionario-active .questionnaire-layout-sticky {
   top: 0;
+  gap: 6px;
+  padding: 4px 0 6px;
+}
+
+body.portal-questionario-active .questionnaire-layout-toolbar {
+  gap: 8px;
+}
+
+body.portal-questionario-active .layout-key-field {
+  gap: 4px;
+}
+
+body.portal-questionario-active .layout-key-field > span {
+  font-size: 0.72rem;
+}
+
+body.portal-questionario-active .layout-key-field input {
+  min-height: 40px;
+}
+
+body.portal-questionario-active .questionnaire-layout-toolbar .primary-button,
+body.portal-questionario-active .questionnaire-layout-toolbar .secondary-button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border-radius: 11px;
+}
+
+body.portal-questionario-active .questionnaire-page-nav {
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 11px;
+}
+
+body.portal-questionario-active .questionnaire-page-nav-copy strong {
+  margin-top: 1px;
+  font-size: 0.82rem;
+}
+
+body.portal-questionario-active .questionnaire-page-nav .section-kicker {
+  font-size: 0.62rem;
+}
+
+body.portal-questionario-active .questionnaire-page-nav-tools {
+  gap: 7px;
+}
+
+body.portal-questionario-active .questionnaire-zoom-controls {
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+body.portal-questionario-active .questionnaire-zoom-controls button {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 7px;
+  border-radius: 7px;
+  font-size: 0.72rem;
+}
+
+body.portal-questionario-active .questionnaire-zoom-controls .questionnaire-zoom-value {
+  min-width: 54px;
+}
+
+body.portal-questionario-active .questionnaire-zoom-controls .questionnaire-zoom-reset {
+  min-width: 50px;
+}
+
+body.portal-questionario-active .questionnaire-page-buttons {
+  gap: 5px;
+}
+
+body.portal-questionario-active .questionnaire-page-buttons button {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 9px;
+  border-radius: 8px;
 }
 
 .page-stack {
