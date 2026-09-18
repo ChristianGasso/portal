@@ -38,8 +38,11 @@ function fileToDataUrl(file) {
   })
 }
 
-function layoutFieldPreview(key) {
+function layoutFieldPreview(key, type = '') {
   const normalized = String(key || '').trim().toLowerCase()
+  const normalizedType = String(type || '').trim().toLowerCase()
+
+  if (normalizedType === 'check') return 'X'
   const examples = {
     'donatore.nome': 'Mario',
     'donatore.cognome': 'Rossi',
@@ -365,7 +368,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   }, [pdfSourceBlob])
 
   useEffect(() => {
-    if (section !== 'layout') return
+    if (section !== 'layout' || layoutLoading) return
 
     let cancelled = false
 
@@ -444,7 +447,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       }
       pdfRenderTaskRef.current = null
     }
-  }, [section, layoutPage, pdfPageCount])
+  }, [section, layoutPage, pdfPageCount, layoutLoading])
 
   const groups = useMemo(() => {
     const map = new Map()
@@ -1261,7 +1264,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         className="pdf-layout-field-preview"
                         style={{ fontSize: Math.max(8, Number(field.font_size || 10) * 1.4) + 'px' }}
                       >
-                        {layoutFieldPreview(field.chiave_campo)}
+                        {layoutFieldPreview(field.chiave_campo, field.tipo_campo)}
                       </span>
                       <span className="pdf-layout-anchor" aria-hidden="true" />
                     </button>
