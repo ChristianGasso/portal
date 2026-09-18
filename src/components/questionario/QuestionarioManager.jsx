@@ -230,6 +230,27 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   }, [layout])
 
   useEffect(() => {
+    if (section !== 'layout') return undefined
+
+    const syncLayoutFromServer = () => {
+      if (document.visibilityState !== 'visible') return
+      if (layoutDirty || layoutSaving) return
+      void loadLayout()
+    }
+
+    const handleWindowFocus = () => syncLayoutFromServer()
+    const handleVisibilityChange = () => syncLayoutFromServer()
+
+    window.addEventListener('focus', handleWindowFocus)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [section, idAvis, layoutDirty, layoutSaving])
+
+  useEffect(() => {
     let cancelled = false
 
     async function loadPdfSource() {
