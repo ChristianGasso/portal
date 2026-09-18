@@ -183,9 +183,6 @@ export async function salvaLayoutQuestionarioAvis(idAvis, campi) {
     body: JSON.stringify({
       id_avis: Number(idAvis),
       campi,
-      pagina_anteprima: Number.isInteger(Number(paginaAnteprima)) && Number(paginaAnteprima) > 0
-        ? Number(paginaAnteprima)
-        : null,
     }),
   })
 }
