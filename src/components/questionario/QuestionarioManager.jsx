@@ -121,6 +121,23 @@ function layoutTypeDefaults(type) {
   return null
 }
 
+function dedupeLayoutFields(fields) {
+  const seen = new Set()
+  const next = []
+
+  for (const field of Array.isArray(fields) ? fields : []) {
+    const key = String(field?.chiave_campo || '').trim().toUpperCase()
+    const page = Number(field?.pagina || 1)
+    const identity = page + ':' + key
+
+    if (!key || seen.has(identity)) continue
+    seen.add(identity)
+    next.push(field)
+  }
+
+  return next
+}
+
 export default function QuestionarioManager({ idAvis, onToast }) {
   const [section, setSection] = useState('domande')
   const [questions, setQuestions] = useState([])
@@ -191,7 +208,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     setLayoutLoading(true)
     try {
       const result = await caricaLayoutQuestionarioAvis(idAvis)
-      const rows = Array.isArray(result?.campi) ? result.campi : []
+      const rows = dedupeLayoutFields(Array.isArray(result?.campi) ? result.campi : [])
       setLayout(rows)
       layoutRef.current = rows
       setLayoutDirty(false)
@@ -544,6 +561,15 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       return
     }
 
+    const duplicate = layoutRef.current.some((field) => (
+      Number(field.pagina) === Number(layoutPage)
+      && String(field.chiave_campo || '').trim().toUpperCase() === key.toUpperCase()
+    ))
+    if (duplicate) {
+      onToast({ tone: 'error', message: 'Questo campo è già presente nella pagina ' + layoutPage + '.' })
+      return
+    }
+
     const textDefaults = layoutTypeDefaults('testo')
     const fieldWidth = textDefaults.larghezza
     const fieldHeight = textDefaults.altezza
@@ -690,7 +716,12 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     } = options
     setLayoutSaving(true)
     try {
-      const result = await salvaLayoutQuestionarioAvis(idAvis, layoutToSave)
+      const normalizedLayout = dedupeLayoutFields(layoutToSave)
+      if (normalizedLayout.length !== layoutToSave.length) {
+        setLayout(normalizedLayout)
+        layoutRef.current = normalizedLayout
+      }
+      const result = await salvaLayoutQuestionarioAvis(idAvis, normalizedLayout)
       setLayoutDirty(false)
       if (reload) await loadLayout()
       if (!suppressSuccessToast) {
@@ -1105,7 +1136,22 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
                     <label className="portal-field">
                       <span>Chiave campo</span>
-                      <input value={selectedField.chiave_campo} onChange={(event) => updateField(selectedFieldIndex, { chiave_campo: event.target.value })} />
+                      <input
+                        value={selectedField.chiave_campo}
+                        onChange={(event) => {
+                          const nextKey = event.target.value
+                          const duplicate = layoutRef.current.some((field, index) => (
+                            index !== selectedFieldIndex
+                            && Number(field.pagina) === Number(selectedField.pagina)
+                            && String(field.chiave_campo || '').trim().toUpperCase() === nextKey.trim().toUpperCase()
+                          ))
+                          if (duplicate) {
+                            onToast({ tone: 'error', message: 'Esiste già un campo con questa chiave nella stessa pagina.' })
+                            return
+                          }
+                          updateField(selectedFieldIndex, { chiave_campo: nextKey })
+                        }}
+                      />
                     </label>
 
                     <div className="questionnaire-editor-grid">
