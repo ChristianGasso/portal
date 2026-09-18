@@ -79,6 +79,21 @@ function questionCodeFromLayoutKey(key) {
   return parts[1].toUpperCase()
 }
 
+function checkPairIdentity(field) {
+  if (String(field?.tipo_campo || '').trim().toLowerCase() !== 'check') return null
+
+  const parts = String(field?.chiave_campo || '').trim().split(':')
+  if (parts[0]?.toLowerCase() !== 'domanda' || !parts[1]) return null
+
+  const answer = String(parts[2] || '').trim().toUpperCase()
+  if (!['SI', 'NO'].includes(answer)) return null
+
+  return {
+    code: parts[1].toUpperCase(),
+    page: Number(field?.pagina || 1),
+  }
+}
+
 function layoutFieldLabel(key) {
   const normalized = String(key || '').trim().toLowerCase()
   const labels = {
@@ -703,9 +718,27 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
   function updateField(index, patch) {
     setLayout((current) => {
-      const next = current.map((field, currentIndex) => (
-        currentIndex === index ? { ...field, ...patch } : field
-      ))
+      const sourceField = current[index]
+      const pair = checkPairIdentity(sourceField)
+      const shouldSyncVerticalPosition = pair && Object.prototype.hasOwnProperty.call(patch, 'y')
+
+      const next = current.map((field, currentIndex) => {
+        if (currentIndex === index) return { ...field, ...patch }
+
+        if (shouldSyncVerticalPosition) {
+          const candidatePair = checkPairIdentity(field)
+          if (
+            candidatePair
+            && candidatePair.code === pair.code
+            && candidatePair.page === pair.page
+          ) {
+            return { ...field, y: patch.y }
+          }
+        }
+
+        return field
+      })
+
       layoutRef.current = next
       return next
     })
