@@ -231,11 +231,11 @@ function portal_questionario_preview_draw(
     $pdf->SetTextColor(0, 0, 0);
 
     if ((string)$field['tipo_campo'] === 'check') {
-        $size = max(0.8, min($width, $height) * 0.72);
+        $size = max(0.7, min($width, $height) * 0.62);
         $half = $size / 2;
         $centerX = $x + ($width / 2);
         $centerY = $y + ($height / 2);
-        $lineWidth = max(0.22, $size * 0.11);
+        $lineWidth = max(0.16, $size * 0.07);
 
         $pdf->SetLineWidth($lineWidth);
         $pdf->Line($centerX - $half, $centerY - $half, $centerX + $half, $centerY + $half);
