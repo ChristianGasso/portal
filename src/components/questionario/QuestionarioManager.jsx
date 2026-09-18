@@ -160,6 +160,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [layoutSaving, setLayoutSaving] = useState(false)
   const [previewDownloading, setPreviewDownloading] = useState(false)
   const [layoutPage, setLayoutPage] = useState(1)
+  const [layoutZoom, setLayoutZoom] = useState(100)
   const [selectedFieldIndex, setSelectedFieldIndex] = useState(null)
   const [newFieldKey, setNewFieldKey] = useState('')
   const [layoutDirty, setLayoutDirty] = useState(false)
@@ -1113,20 +1114,57 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                   <span className="section-kicker">PAGINA PDF</span>
                   <strong>{pdfPageCount ? `Pagina ${layoutPage} di ${pdfPageCount}` : 'Pagina non disponibile'}</strong>
                 </div>
-                <div className="questionnaire-page-buttons">
-                  {Array.from({ length: pdfPageCount }, (_, index) => index + 1).map((page) => (
+                <div className="questionnaire-page-nav-tools">
+                  <div className="questionnaire-zoom-controls" aria-label="Zoom anteprima PDF">
                     <button
                       type="button"
-                      key={page}
-                      className={Number(layoutPage) === page ? 'is-active' : ''}
-                      onClick={() => {
-                        setLayoutPage(page)
-                        setSelectedFieldIndex(null)
-                      }}
+                      onClick={() => setLayoutZoom((current) => Math.max(50, current - 10))}
+                      disabled={layoutZoom <= 50}
+                      title="Riduci zoom"
                     >
-                      {page}
+                      −
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      className="questionnaire-zoom-value"
+                      onClick={() => setLayoutZoom(100)}
+                      title="Ripristina zoom al 100%"
+                    >
+                      {layoutZoom}%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLayoutZoom((current) => Math.min(200, current + 10))}
+                      disabled={layoutZoom >= 200}
+                      title="Aumenta zoom"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      className="questionnaire-zoom-reset"
+                      onClick={() => setLayoutZoom(100)}
+                      disabled={layoutZoom === 100}
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <div className="questionnaire-page-buttons">
+                    {Array.from({ length: pdfPageCount }, (_, index) => index + 1).map((page) => (
+                      <button
+                        type="button"
+                        key={page}
+                        className={Number(layoutPage) === page ? 'is-active' : ''}
+                        onClick={() => {
+                          setLayoutPage(page)
+                          setSelectedFieldIndex(null)
+                        }}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -1137,11 +1175,15 @@ export default function QuestionarioManager({ idAvis, onToast }) {
           ) : (
             <>
               <div className="questionnaire-layout-workspace">
-              <div
-                className="pdf-layout-stage"
-                ref={stageRef}
-                style={{ aspectRatio: pdfPageRatio }}
-              >
+              <div className="pdf-layout-viewport">
+                <div
+                  className="pdf-layout-stage"
+                  ref={stageRef}
+                  style={{
+                    aspectRatio: pdfPageRatio,
+                    zoom: layoutZoom / 100,
+                  }}
+                >
                 {pdfPageLoading ? (
                   <div className="pdf-layout-placeholder">Caricamento pagina {layoutPage}…</div>
                 ) : pdfSourceBlob ? (
@@ -1191,6 +1233,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                       <span className="pdf-layout-anchor" aria-hidden="true" />
                     </button>
                   ))}
+                </div>
                 </div>
               </div>
 
