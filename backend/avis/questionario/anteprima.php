@@ -231,9 +231,16 @@ function portal_questionario_preview_draw(
     $pdf->SetTextColor(0, 0, 0);
 
     if ((string)$field['tipo_campo'] === 'check') {
-        $pdf->SetFont('Helvetica', 'B', $fontSize);
-        $pdf->SetXY($x, $y);
-        $pdf->Cell($width, $height, 'X', 0, 0, 'C');
+        $size = max(0.8, min($width, $height) * 0.72);
+        $half = $size / 2;
+        $centerX = $x + ($width / 2);
+        $centerY = $y + ($height / 2);
+        $lineWidth = max(0.22, $size * 0.11);
+
+        $pdf->SetLineWidth($lineWidth);
+        $pdf->Line($centerX - $half, $centerY - $half, $centerX + $half, $centerY + $half);
+        $pdf->Line($centerX - $half, $centerY + $half, $centerX + $half, $centerY - $half);
+        $pdf->SetLineWidth(0.2);
         return;
     }
 
