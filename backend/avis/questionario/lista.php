@@ -22,7 +22,7 @@ try {
     $stmt = $pdo->prepare(
         'SELECT id, codice, sezione_codice, sezione_titolo, sezione_descrizione,
                 ordine_sezione, pagina_compilazione, testo, tipo_risposta,
-                opzioni_json, obbligatoria, solo_donne, dettaglio_quando,
+                opzioni_json, obbligatoria, solo_donne, omettibile_periodico, dettaglio_quando,
                 etichetta_dettaglio, ordine_domanda, attiva
          FROM questionario_domande
          WHERE id_avis = :id_avis
@@ -55,6 +55,7 @@ try {
             'opzioni' => $options,
             'obbligatoria' => (bool)$row['obbligatoria'],
             'solo_donne' => (bool)$row['solo_donne'],
+            'omettibile_periodico' => (bool)$row['omettibile_periodico'],
             'dettaglio_quando' => $row['dettaglio_quando'] !== null ? (string)$row['dettaglio_quando'] : null,
             'etichetta_dettaglio' => $row['etichetta_dettaglio'] !== null ? (string)$row['etichetta_dettaglio'] : null,
             'ordine_domanda' => (int)$row['ordine_domanda'],
