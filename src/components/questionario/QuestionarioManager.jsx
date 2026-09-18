@@ -1168,7 +1168,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                   ref={stageRef}
                   style={{
                     aspectRatio: pdfPageRatio,
-                    zoom: layoutZoom / 100,
+                    width: `min(${layoutZoom}%, ${8.4 * layoutZoom}px)`,
                   }}
                 >
                 {pdfPageLoading ? (
@@ -1202,6 +1202,8 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         top: Number(field.y) * 100 + '%',
                         width: Number(field.larghezza) * 100 + '%',
                         height: Number(field.altezza) * 100 + '%',
+                        transform: `scale(${100 / layoutZoom})`,
+                        transformOrigin: 'top left',
                       }}
                       onPointerDown={(event) => {
                         setSelectedFieldIndex(index)
