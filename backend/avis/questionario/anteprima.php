@@ -235,7 +235,7 @@ function portal_questionario_preview_draw(
         $half = $size / 2;
         $centerX = $x + ($width / 2);
         $centerY = $y + ($height / 2);
-        $lineWidth = max(0.16, $size * 0.07);
+        $lineWidth = max(0.22, $size * 0.10);
 
         $pdf->SetLineWidth($lineWidth);
         $pdf->Line($centerX - $half, $centerY - $half, $centerX + $half, $centerY + $half);
