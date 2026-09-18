@@ -317,6 +317,10 @@ body.portal-questionario-active .portal-content {
   padding-top: 14px;
 }
 
+body.portal-questionario-active .questionnaire-layout-sticky {
+  top: 0;
+}
+
 .page-stack {
   display: grid;
   gap: 24px;
