@@ -104,6 +104,7 @@ export async function aggiornaDomandaQuestionarioAvis(idAvis, domanda) {
       tipo_risposta: domanda.tipo_risposta,
       obbligatoria: Boolean(domanda.obbligatoria),
       solo_donne: Boolean(domanda.solo_donne),
+      omettibile_periodico: Boolean(domanda.omettibile_periodico),
       dettaglio_quando: domanda.dettaglio_quando || null,
       etichetta_dettaglio: domanda.etichetta_dettaglio || null,
       ordine_domanda: Number(domanda.ordine_domanda),
