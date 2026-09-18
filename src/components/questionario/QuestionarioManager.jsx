@@ -1248,8 +1248,6 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         top: Number(field.y) * 100 + '%',
                         width: Number(field.larghezza) * 100 + '%',
                         height: Number(field.altezza) * 100 + '%',
-                        transform: `scale(${100 / layoutZoom})`,
-                        transformOrigin: 'top left',
                       }}
                       onPointerDown={(event) => {
                         setSelectedFieldIndex(index)
