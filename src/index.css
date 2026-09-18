@@ -1981,6 +1981,58 @@ button {
   font-size: 0.9rem;
 }
 
+.questionnaire-page-nav-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.questionnaire-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid #dbe5f4;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.questionnaire-zoom-controls button {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.questionnaire-zoom-controls button:hover:not(:disabled) {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.questionnaire-zoom-controls button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.questionnaire-zoom-controls .questionnaire-zoom-value {
+  min-width: 62px;
+  color: #1d4ed8;
+}
+
+.questionnaire-zoom-controls .questionnaire-zoom-reset {
+  min-width: 58px;
+}
+
 .questionnaire-page-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -2018,6 +2070,14 @@ button {
   grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.5fr);
   gap: 20px;
   align-items: start;
+}
+
+.pdf-layout-viewport {
+  width: 100%;
+  max-height: calc(100vh - 180px);
+  overflow: auto;
+  padding: 4px 12px 18px 4px;
+  overscroll-behavior: contain;
 }
 
 .pdf-layout-stage {
