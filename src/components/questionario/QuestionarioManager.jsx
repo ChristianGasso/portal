@@ -460,54 +460,6 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     return Array.from(map.values()).sort((a, b) => a.order - b.order)
   }, [questions])
 
-  const fieldSuggestions = useMemo(() => {
-    const fixed = [
-      'donatore.nome',
-      'donatore.cognome',
-      'donatore.nome_completo',
-      'concat:donatore.nome:donatore.cognome',
-      'donatore.codice_fiscale',
-      'donatore.data_nascita',
-      'donatore.email',
-      'donatore.telefono',
-      'questionario.data',
-      'firma.donatore',
-      'firma.medico',
-    ]
-
-    const usedQuestionFields = new Set(
-      layout
-        .map((field) => String(field.chiave_campo || '').trim().toUpperCase())
-        .filter((key) => key.startsWith('DOMANDA:')),
-    )
-
-    const questionFields = questions.flatMap((question) => {
-      const code = String(question.codice || '').trim()
-      if (!code) return []
-
-      const responseType = String(question.tipo_risposta || '').trim().toUpperCase()
-      const candidates = responseType === 'SI_NO'
-        ? [
-            'domanda:' + code + ':SI',
-            'domanda:' + code + ':NO',
-          ]
-        : ['domanda:' + code]
-
-      return candidates.filter((key) => !usedQuestionFields.has(key.toUpperCase()))
-    })
-
-    return [
-      ...fixed,
-      ...questionFields,
-    ]
-  }, [questions, layout])
-
-  const pageFields = layout
-    .map((field, index) => ({ field, index }))
-    .filter(({ field }) => Number(field.pagina) === Number(layoutPage))
-
-  const selectedField = selectedFieldIndex === null ? null : layout[selectedFieldIndex] || null
-
   const questionByCode = useMemo(() => {
     const map = new Map()
     for (const question of questions) {
@@ -516,6 +468,98 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     }
     return map
   }, [questions])
+
+  const fieldSuggestions = useMemo(() => {
+    const fixed = [
+      'donatore.nome',
+      'donatore.cognome',
+      'donatore.nome_completo',
+      'concat:donatore.nome:donatore.cognome',
+      'donatore.codice_fiscale',
+      'donatore.data_nascita',
+      'donatore.luogo_nascita',
+      'donatore.provincia_nascita',
+      'donatore.nazione_nascita',
+      'donatore.sesso',
+      'donatore.medico_curante',
+      'donatore.via_residenza',
+      'donatore.civico_residenza',
+      'donatore.indirizzo_residenza',
+      'donatore.cap_residenza',
+      'donatore.citta_residenza',
+      'donatore.citta_provincia_residenza',
+      'donatore.provincia_residenza',
+      'donatore.email',
+      'donatore.telefono',
+      'questionario.data',
+      'raccolta.data',
+      'firma.donatore',
+      'firma.medico',
+    ]
+
+    const usedOnExpectedPage = new Set()
+
+    for (const field of layout) {
+      const key = String(field.chiave_campo || '').trim()
+      const normalizedKey = key.toUpperCase()
+      const page = Number(field.pagina || 1)
+
+      if (normalizedKey.startsWith('DOMANDA:')) {
+        const parts = key.split(':')
+        const code = String(parts[1] || '').trim().toUpperCase()
+        const question = questionByCode.get(code)
+        if (question && page === Number(question.pagina_compilazione || 1)) {
+          usedOnExpectedPage.add(normalizedKey)
+        }
+        continue
+      }
+
+      if (normalizedKey.startsWith('DETTAGLIO:')) {
+        const parts = key.split(':')
+        const code = String(parts[1] || '').trim().toUpperCase()
+        const question = questionByCode.get(code)
+        if (question && page === Number(question.pagina_compilazione || 1)) {
+          usedOnExpectedPage.add(normalizedKey)
+        }
+      }
+    }
+
+    const questionFields = questions.flatMap((question) => {
+      const code = String(question.codice || '').trim()
+      if (!code) return []
+
+      const responseType = String(question.tipo_risposta || '').trim().toUpperCase()
+      const candidates = []
+
+      if (responseType === 'SI_NO') {
+        candidates.push(
+          'domanda:' + code + ':SI',
+          'domanda:' + code + ':NO',
+        )
+      } else {
+        candidates.push('domanda:' + code)
+      }
+
+      if (String(question.dettaglio_quando || '').trim()) {
+        candidates.push('dettaglio:' + code)
+      }
+
+      return candidates.filter((key) => !usedOnExpectedPage.has(key.toUpperCase()))
+    })
+
+    return [
+      ...fixed,
+      ...questionFields,
+    ]
+  }, [questions, layout, questionByCode])
+
+  const pageFields = layout
+    .map((field, index) => ({ field, index }))
+    .filter(({ field }) => Number(field.pagina) === Number(layoutPage))
+
+  const selectedField = selectedFieldIndex === null ? null : layout[selectedFieldIndex] || null
+
+
 
   const newFieldQuestion = questionByCode.get(questionCodeFromLayoutKey(newFieldKey)) || null
   const selectedFieldQuestion = selectedField
@@ -582,12 +626,19 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       return
     }
 
+    const questionCode = questionCodeFromLayoutKey(key)
+      || (key.toLowerCase().startsWith('dettaglio:') ? key.split(':')[1]?.toUpperCase() : null)
+    const relatedQuestion = questionCode ? questionByCode.get(questionCode) || null : null
+    const targetPage = relatedQuestion
+      ? Number(relatedQuestion.pagina_compilazione || layoutPage)
+      : Number(layoutPage)
+
     const duplicate = layoutRef.current.some((field) => (
-      Number(field.pagina) === Number(layoutPage)
+      Number(field.pagina) === targetPage
       && String(field.chiave_campo || '').trim().toUpperCase() === key.toUpperCase()
     ))
     if (duplicate) {
-      onToast({ tone: 'error', message: 'Questo campo è già presente nella pagina ' + layoutPage + '.' })
+      onToast({ tone: 'error', message: 'Questo campo è già presente nella pagina ' + targetPage + '.' })
       return
     }
 
@@ -625,7 +676,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     const field = {
       chiave_campo: key,
       tipo_campo: 'testo',
-      pagina: Number(layoutPage),
+      pagina: targetPage,
       x: fieldX,
       y: fieldY,
       larghezza: textDefaults.larghezza,
@@ -643,6 +694,9 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     })
     setLayoutDirty(true)
     setNewFieldKey('')
+    if (targetPage !== Number(layoutPage)) {
+      setLayoutPage(targetPage)
+    }
   }
 
   function updateField(index, patch) {
