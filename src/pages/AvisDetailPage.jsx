@@ -536,10 +536,12 @@ export default function AvisDetailPage({ idAvis, onBack }) {
         <QuestionarioManager idAvis={idAvis} onToast={setToast} />
       ) : null}
 
-      <section className="panel-card avis-database-note">
-        <span className="section-kicker">COLLEGAMENTO OPERATIVO</span>
-        <strong>{Object.keys(database).length > 0 ? 'Database AVIS associato' : 'Configurazione database da verificare'}</strong>
-      </section>
+      {activeTab !== 'questionario' ? (
+        <section className="panel-card avis-database-note">
+          <span className="section-kicker">COLLEGAMENTO OPERATIVO</span>
+          <strong>{Object.keys(database).length > 0 ? 'Database AVIS associato' : 'Configurazione database da verificare'}</strong>
+        </section>
+      ) : null}
     </div>
   )
 }
