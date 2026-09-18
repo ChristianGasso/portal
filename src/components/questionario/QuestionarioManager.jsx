@@ -698,7 +698,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     }
   }
 
-  async function downloadPreviewPdf() {
+  async function downloadPreviewPdf(mode = 'full') {
     if (previewDownloading) return
     if (!pdf.presente) {
       onToast({ tone: 'error', message: 'Carica prima il PDF di partenza.' })
@@ -709,21 +709,33 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       return
     }
 
+    const currentPageOnly = mode === 'page'
     const previewWindow = window.open('', '_blank')
     if (!previewWindow) {
       onToast({ tone: 'error', message: 'Il browser ha bloccato l’apertura del PDF di prova.' })
       return
     }
 
-    previewWindow.document.title = 'Preparazione PDF di prova'
+    previewWindow.document.title = currentPageOnly
+      ? 'Preparazione anteprima pagina ' + layoutPage
+      : 'Preparazione PDF di prova'
     previewWindow.document.body.innerHTML = '<p style="font-family: sans-serif; padding: 24px;">Preparazione PDF di prova…</p>'
 
     setPreviewDownloading(true)
     try {
-      const result = await scaricaAnteprimaQuestionarioAvis(idAvis, layoutRef.current)
+      const result = await scaricaAnteprimaQuestionarioAvis(
+        idAvis,
+        layoutRef.current,
+        currentPageOnly ? Number(layoutPage) : null,
+      )
       previewWindow.location.href = result.url
       window.setTimeout(() => URL.revokeObjectURL(result.url), 60000)
-      onToast({ tone: 'success', message: 'PDF di prova aperto in una nuova scheda.' })
+      onToast({
+        tone: 'success',
+        message: currentPageOnly
+          ? 'Anteprima della pagina ' + layoutPage + ' aperta in una nuova scheda.'
+          : 'PDF di prova completo aperto in una nuova scheda.',
+      })
     } catch (error) {
       previewWindow.close()
       onToast({ tone: 'error', message: error.message || 'Non è stato possibile generare il PDF di prova.' })
@@ -968,8 +980,11 @@ export default function QuestionarioManager({ idAvis, onToast }) {
               </label>
 
               <button type="button" className="secondary-button" onClick={addLayoutField}>Aggiungi campo</button>
-              <button type="button" className="secondary-button" onClick={() => void downloadPreviewPdf()} disabled={previewDownloading || !pdf.presente || !layout.length}>
-                {previewDownloading ? 'Preparazione PDF…' : 'Apri PDF di prova'}
+              <button type="button" className="secondary-button" onClick={() => void downloadPreviewPdf('page')} disabled={previewDownloading || !pdf.presente || !layout.length || !pdfPageCount}>
+                {previewDownloading ? 'Preparazione PDF…' : 'Anteprima pagina corrente'}
+              </button>
+              <button type="button" className="secondary-button" onClick={() => void downloadPreviewPdf('full')} disabled={previewDownloading || !pdf.presente || !layout.length}>
+                {previewDownloading ? 'Preparazione PDF…' : 'Anteprima PDF completo'}
               </button>
               <button type="button" className="primary-button" onClick={() => void saveLayout()} disabled={layoutSaving || !layoutDirty}>
                 {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva layout' : 'Layout salvato'}
