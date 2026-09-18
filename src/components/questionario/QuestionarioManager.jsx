@@ -141,6 +141,30 @@ function layoutTypeDefaults(type) {
   return null
 }
 
+function layoutAnswerProgression(key) {
+  const parts = String(key || '').trim().split(':')
+  const hasDomandaPrefix = parts[0]?.toLowerCase() === 'domanda'
+  const code = hasDomandaPrefix ? parts[1] : parts[0]
+  const answer = String(hasDomandaPrefix ? parts[2] : parts[1] || '').trim().toUpperCase()
+
+  if (!code || !['SI', 'NO'].includes(answer)) return null
+
+  const match = String(code).toUpperCase().match(/^(.*?)(\d+)$/)
+  if (!match) return null
+
+  return {
+    prefix: match[1],
+    progressive: Number(match[2]),
+    answer,
+  }
+}
+
+function isCheckAnswerKey(key) {
+  const parts = String(key || '').trim().split(':')
+  const answer = String(parts.at(-1) || '').trim().toUpperCase()
+  return ['SI', 'NO'].includes(answer)
+}
+
 function dedupeLayoutFields(fields) {
   const seen = new Set()
   const next = []
@@ -180,6 +204,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   const [previewDownloading, setPreviewDownloading] = useState(false)
   const [layoutPage, setLayoutPage] = useState(1)
   const [layoutZoom, setLayoutZoom] = useState(100)
+  const [pageVerticalSteps, setPageVerticalSteps] = useState({})
   const [selectedFieldIndex, setSelectedFieldIndex] = useState(null)
   const [newFieldKey, setNewFieldKey] = useState('')
   const [layoutDirty, setLayoutDirty] = useState(false)
@@ -250,6 +275,34 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   useEffect(() => {
     layoutRef.current = layout
   }, [layout])
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('portal:questionario:vertical-steps:' + idAvis)
+      const parsed = stored ? JSON.parse(stored) : {}
+      setPageVerticalSteps(parsed && typeof parsed === 'object' ? parsed : {})
+    } catch {
+      setPageVerticalSteps({})
+    }
+  }, [idAvis])
+
+  function setPageVerticalStep(page, value) {
+    const numeric = Number(value)
+    const normalized = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : 0
+
+    setPageVerticalSteps((current) => {
+      const next = { ...current, [page]: normalized }
+      try {
+        window.localStorage.setItem(
+          'portal:questionario:vertical-steps:' + idAvis,
+          JSON.stringify(next),
+        )
+      } catch {
+        // Il valore resta disponibile per la sessione corrente anche senza localStorage.
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (section !== 'layout') return undefined
@@ -662,9 +715,10 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       return
     }
 
-    const textDefaults = layoutTypeDefaults('testo')
-    const fieldWidth = textDefaults.larghezza
-    const fieldHeight = textDefaults.altezza
+    const isCheck = isCheckAnswerKey(key)
+    const defaults = layoutTypeDefaults(isCheck ? 'check' : 'testo')
+    const fieldWidth = defaults.larghezza
+    const fieldHeight = defaults.altezza
     let fieldX = 0.10
     let fieldY = 0.10
     const stage = stageRef.current
@@ -693,16 +747,39 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       }
     }
 
+    const progression = layoutAnswerProgression(key)
+    const verticalStep = Number(pageVerticalSteps[targetPage] ?? 0)
+
+    if (progression && verticalStep > 0) {
+      const previous = layoutRef.current
+        .filter((field) => Number(field.pagina) === targetPage)
+        .map((field) => ({ field, progression: layoutAnswerProgression(field.chiave_campo) }))
+        .filter(({ progression: candidate }) => (
+          candidate
+          && candidate.answer === progression.answer
+          && candidate.prefix === progression.prefix
+          && candidate.progressive < progression.progressive
+        ))
+        .sort((a, b) => b.progression.progressive - a.progression.progressive)[0]?.field
+
+      if (previous) {
+        fieldY = Math.min(
+          1 - fieldHeight,
+          Math.max(0, Number(previous.y) + (verticalStep / 100)),
+        )
+      }
+    }
+
     const field = {
       chiave_campo: key,
-      tipo_campo: 'testo',
+      tipo_campo: isCheck ? 'check' : 'testo',
       pagina: targetPage,
       x: fieldX,
       y: fieldY,
-      larghezza: textDefaults.larghezza,
-      altezza: textDefaults.altezza,
-      font_size: textDefaults.font_size,
-      allineamento: textDefaults.allineamento,
+      larghezza: defaults.larghezza,
+      altezza: defaults.altezza,
+      font_size: defaults.font_size,
+      allineamento: defaults.allineamento,
       attivo: true,
     }
 
@@ -1222,6 +1299,17 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                   <strong>{pdfPageCount ? `Pagina ${layoutPage} di ${pdfPageCount}` : 'Pagina non disponibile'}</strong>
                 </div>
                 <div className="questionnaire-page-nav-tools">
+                  <label className="questionnaire-page-step-control" title="Incremento verticale automatico per i nuovi campi progressivi della pagina corrente">
+                    <span>Passo verticale %</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={pageVerticalSteps[layoutPage] ?? 0}
+                      onChange={(event) => setPageVerticalStep(layoutPage, event.target.value)}
+                    />
+                  </label>
                   <div className="questionnaire-zoom-controls" aria-label="Zoom anteprima PDF">
                     <button
                       type="button"
