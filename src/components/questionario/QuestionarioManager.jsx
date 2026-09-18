@@ -1339,10 +1339,12 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         {layoutFieldLabel(field.chiave_campo)}
                       </span>
                       <span
-                        className="pdf-layout-field-preview"
+                        className={'pdf-layout-field-preview ' + (String(field.tipo_campo || '').toLowerCase() === 'check' ? 'is-vector-check' : '')}
                         style={{ fontSize: Math.max(8, Number(field.font_size || 10) * 1.4) + 'px' }}
                       >
-                        {layoutFieldPreview(field.chiave_campo, field.tipo_campo)}
+                        {String(field.tipo_campo || '').toLowerCase() === 'check'
+                          ? <span className="pdf-layout-vector-x" aria-label="X" />
+                          : layoutFieldPreview(field.chiave_campo, field.tipo_campo)}
                       </span>
                       <span className="pdf-layout-anchor" aria-hidden="true" />
                     </button>
