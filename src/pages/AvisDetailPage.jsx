@@ -178,6 +178,14 @@ export default function AvisDetailPage({ idAvis, onBack }) {
 
   }, [activeTab, idAvis])
 
+  useEffect(() => {
+    document.body.classList.toggle('portal-questionario-active', activeTab === 'questionario')
+
+    return () => {
+      document.body.classList.remove('portal-questionario-active')
+    }
+  }, [activeTab])
+
   const avis = detail?.avis || {}
   const database = detail?.database || {}
   const name = String(firstValue(avis, ['nome', 'denominazione', 'ragione_sociale'], 'AVIS')).trim()
