@@ -1044,6 +1044,12 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                     <ToggleCard label="Domanda attiva" description="Se disattivata non verrà mostrata nel questionario." checked={Boolean(questionDraft.attiva)} onChange={(value) => setQuestionDraft((current) => ({ ...current, attiva: value }))} />
                     <ToggleCard label="Obbligatoria" description="La compilazione richiede una risposta prima di procedere." checked={Boolean(questionDraft.obbligatoria)} onChange={(value) => setQuestionDraft((current) => ({ ...current, obbligatoria: value }))} />
                     <ToggleCard label="Solo donne" description="La domanda viene proposta esclusivamente alle donatrici." checked={Boolean(questionDraft.solo_donne)} onChange={(value) => setQuestionDraft((current) => ({ ...current, solo_donne: value }))} />
+                    <ToggleCard
+                      label="Omettibile per donatore periodico"
+                      description="Consente di non proporre questa domanda quando il donatore rientra nei criteri del questionario ridotto."
+                      checked={Boolean(questionDraft.omettibile_periodico)}
+                      onChange={(value) => setQuestionDraft((current) => ({ ...current, omettibile_periodico: value }))}
+                    />
                   </div>
                 </>
               ) : (
