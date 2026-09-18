@@ -309,6 +309,14 @@ button {
   padding: 34px;
 }
 
+body.portal-questionario-active .portal-topbar {
+  display: none;
+}
+
+body.portal-questionario-active .portal-content {
+  padding-top: 14px;
+}
+
 .page-stack {
   display: grid;
   gap: 24px;
