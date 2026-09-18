@@ -141,54 +141,6 @@ function layoutTypeDefaults(type) {
   return null
 }
 
-function roundLayoutFraction(value) {
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return 0
-  return Math.round(numeric * 10000) / 10000
-}
-
-function normalizeLayoutGeometry(field) {
-  return {
-    ...field,
-    x: roundLayoutFraction(field?.x),
-    y: roundLayoutFraction(field?.y),
-    larghezza: roundLayoutFraction(field?.larghezza),
-    altezza: roundLayoutFraction(field?.altezza),
-  }
-}
-
-function normalizeCheckPairGeometry(fields) {
-  const next = fields.map(normalizeLayoutGeometry)
-  const groups = new Map()
-
-  next.forEach((field, index) => {
-    const pair = checkPairIdentity(field)
-    if (!pair) return
-
-    const key = pair.page + ':' + pair.code
-    const group = groups.get(key) || []
-    group.push(index)
-    groups.set(key, group)
-  })
-
-  for (const indexes of groups.values()) {
-    if (indexes.length < 2) continue
-
-    const anchor = next[indexes[0]]
-    for (const index of indexes.slice(1)) {
-      next[index] = {
-        ...next[index],
-        y: anchor.y,
-        altezza: anchor.altezza,
-        font_size: anchor.font_size,
-        allineamento: anchor.allineamento,
-      }
-    }
-  }
-
-  return next
-}
-
 function dedupeLayoutFields(fields) {
   const seen = new Set()
   const next = []
@@ -278,9 +230,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     setLayoutLoading(true)
     try {
       const result = await caricaLayoutQuestionarioAvis(idAvis)
-      const rows = normalizeCheckPairGeometry(
-        dedupeLayoutFields(Array.isArray(result?.campi) ? result.campi : []),
-      )
+      const rows = dedupeLayoutFields(Array.isArray(result?.campi) ? result.campi : [])
       setLayout(rows)
       layoutRef.current = rows
       setLayoutDirty(false)
@@ -767,13 +717,6 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   }
 
   function updateField(index, patch) {
-    const normalizedPatch = { ...patch }
-    for (const key of ['x', 'y', 'larghezza', 'altezza']) {
-      if (Object.prototype.hasOwnProperty.call(normalizedPatch, key)) {
-        normalizedPatch[key] = roundLayoutFraction(normalizedPatch[key])
-      }
-    }
-
     setLayout((current) => {
       const sourceField = current[index]
       const pair = checkPairIdentity(sourceField)
@@ -781,15 +724,15 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       const pairPatch = pair
         ? Object.fromEntries(
             syncedKeys
-              .filter((key) => Object.prototype.hasOwnProperty.call(normalizedPatch, key))
-              .map((key) => [key, normalizedPatch[key]]),
+              .filter((key) => Object.prototype.hasOwnProperty.call(patch, key))
+              .map((key) => [key, patch[key]]),
           )
         : {}
 
       const shouldSyncPair = pair && Object.keys(pairPatch).length > 0
 
       const next = current.map((field, currentIndex) => {
-        if (currentIndex === index) return { ...field, ...normalizedPatch }
+        if (currentIndex === index) return { ...field, ...patch }
 
         if (shouldSyncPair) {
           const candidatePair = checkPairIdentity(field)
@@ -945,7 +888,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     } = options
     setLayoutSaving(true)
     try {
-      const normalizedLayout = normalizeCheckPairGeometry(dedupeLayoutFields(layoutToSave))
+      const normalizedLayout = dedupeLayoutFields(layoutToSave)
       if (normalizedLayout.length !== layoutToSave.length) {
         setLayout(normalizedLayout)
         layoutRef.current = normalizedLayout
@@ -991,7 +934,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     try {
       const result = await scaricaAnteprimaQuestionarioAvis(
         idAvis,
-        normalizeCheckPairGeometry(layoutRef.current),
+        layoutRef.current,
         currentPageOnly ? Number(layoutPage) : null,
       )
       previewWindow.location.href = result.url
