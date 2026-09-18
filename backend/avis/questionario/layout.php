@@ -148,10 +148,10 @@ try {
         $key = trim((string)($field['chiave_campo'] ?? ''));
         $type = strtolower(trim((string)($field['tipo_campo'] ?? 'testo')));
         $page = (int)($field['pagina'] ?? 1);
-        $x = (float)($field['x'] ?? 0);
-        $y = (float)($field['y'] ?? 0);
-        $width = (float)($field['larghezza'] ?? 0.20);
-        $height = (float)($field['altezza'] ?? 0.04);
+        $x = round((float)($field['x'] ?? 0), 4);
+        $y = round((float)($field['y'] ?? 0), 4);
+        $width = round((float)($field['larghezza'] ?? 0.20), 4);
+        $height = round((float)($field['altezza'] ?? 0.04), 4);
         $fontSize = $field['font_size'] === null || $field['font_size'] === ''
             ? null
             : (float)$field['font_size'];
