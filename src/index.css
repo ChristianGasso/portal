@@ -347,9 +347,23 @@ body.portal-questionario-active .questionnaire-layout-toolbar .secondary-button 
 }
 
 body.portal-questionario-active .questionnaire-page-nav {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) auto 1fr;
+  align-items: center;
   gap: 10px;
   padding: 7px 10px;
   border-radius: 11px;
+}
+
+body.portal-questionario-active .questionnaire-save-inline {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 9px;
+}
+
+body.portal-questionario-active .questionnaire-page-nav-copy {
+  min-width: max-content;
 }
 
 body.portal-questionario-active .questionnaire-page-nav-copy strong {
@@ -1195,6 +1209,15 @@ body.portal-questionario-active .questionnaire-page-buttons button {
 }
 
 @media (max-width: 720px) {
+  body.portal-questionario-active .questionnaire-page-nav {
+    grid-template-columns: 1fr;
+  }
+
+  body.portal-questionario-active .questionnaire-save-inline {
+    width: 100%;
+  }
+
+
   .avis-grid {
     grid-template-columns: 1fr;
   }
