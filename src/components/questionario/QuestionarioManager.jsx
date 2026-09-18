@@ -552,6 +552,30 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     ? questionByCode.get(questionCodeFromLayoutKey(selectedField.chiave_campo)) || null
     : null
 
+  async function updateSelectedFieldQuestionOmittable(value) {
+    if (!selectedFieldQuestion || questionSaving) return
+
+    setQuestionSaving(true)
+    try {
+      const result = await aggiornaDomandaQuestionarioAvis(idAvis, {
+        ...selectedFieldQuestion,
+        omettibile_periodico: value,
+      })
+      await loadQuestions()
+      onToast({
+        tone: 'success',
+        message: result.message || 'Opzione della domanda aggiornata correttamente.',
+      })
+    } catch (error) {
+      onToast({
+        tone: 'error',
+        message: error.message || 'Non è stato possibile aggiornare l’opzione della domanda.',
+      })
+    } finally {
+      setQuestionSaving(false)
+    }
+  }
+
   async function saveQuestion() {
     if (!questionDraft || questionSaving) return
     setQuestionSaving(true)
@@ -1297,6 +1321,18 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         Rimuovi
                       </button>
                     </div>
+
+                    {selectedFieldQuestion ? (
+                      <div className="questionnaire-toggle-list layout-question-toggle">
+                        <ToggleCard
+                          label="Omettibile per donatore periodico"
+                          description="Se attivo, questa domanda potrà essere esclusa dal questionario ridotto del donatore periodico."
+                          checked={Boolean(selectedFieldQuestion.omettibile_periodico)}
+                          disabled={questionSaving}
+                          onChange={(value) => void updateSelectedFieldQuestionOmittable(value)}
+                        />
+                      </div>
+                    ) : null}
 
                     <label className="portal-field">
                       <span>Chiave campo</span>
