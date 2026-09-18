@@ -253,6 +253,8 @@ $input = portal_json_input();
 $idAvis = (int)($input['id_avis'] ?? 0);
 $fields = $input['campi'] ?? null;
 $previewValuesInput = $input['preview_values'] ?? [];
+$previewPage = $input['pagina_anteprima'] ?? null;
+$previewPage = $previewPage === null || $previewPage === '' ? null : (int)$previewPage;
 
 if ($idAvis <= 0) {
     portal_error('Seleziona una AVIS valida.', 400);
@@ -264,6 +266,10 @@ if (!is_array($fields)) {
 
 if (!is_array($previewValuesInput)) {
     portal_error('Valori anteprima non validi.', 400);
+}
+
+if ($previewPage !== null && $previewPage <= 0) {
+    portal_error('Pagina anteprima non valida.', 400);
 }
 
 try {
@@ -304,7 +310,15 @@ try {
             $byPage[$page][] = $field;
         }
 
-        for ($page = 1; $page <= $pageCount; $page++) {
+        if ($previewPage !== null && $previewPage > $pageCount) {
+            portal_error('La pagina richiesta non è presente nel PDF.', 400);
+        }
+
+        $pagesToRender = $previewPage !== null
+            ? [$previewPage]
+            : range(1, $pageCount);
+
+        foreach ($pagesToRender as $page) {
             $templateId = $pdf->importPage($page);
             $size = $pdf->getTemplateSize($templateId);
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
@@ -329,7 +343,10 @@ try {
     portal_cors();
     http_response_code(200);
     header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="questionario_prova_' . $codiceSede . '.pdf"');
+    $filename = $previewPage !== null
+        ? 'questionario_prova_' . $codiceSede . '_pagina_' . $previewPage . '.pdf'
+        : 'questionario_prova_' . $codiceSede . '.pdf';
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Cache-Control: no-store');
     header('Content-Length: ' . strlen($output));
     echo $output;
