@@ -1283,7 +1283,13 @@ export default function QuestionarioManager({ idAvis, onToast }) {
                         height: Number(field.altezza) * 100 + '%',
                       }}
                       onPointerDown={(event) => {
-                        setSelectedFieldIndex(index)
+                        if (selectedFieldIndex !== index) {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          setSelectedFieldIndex(index)
+                          return
+                        }
+
                         handleDrag(index, event)
                       }}
                     >
