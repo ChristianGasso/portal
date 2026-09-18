@@ -644,6 +644,30 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     }
   }
 
+  async function updateSelectedFieldQuestionOnlyWomen(value) {
+    if (!selectedFieldQuestion || questionSaving) return
+
+    setQuestionSaving(true)
+    try {
+      const result = await aggiornaDomandaQuestionarioAvis(idAvis, {
+        ...selectedFieldQuestion,
+        solo_donne: value,
+      })
+      await loadQuestions()
+      onToast({
+        tone: 'success',
+        message: result.message || 'Impostazione Solo donne aggiornata correttamente.',
+      })
+    } catch (error) {
+      onToast({
+        tone: 'error',
+        message: error.message || 'Non è stato possibile aggiornare l’impostazione Solo donne.',
+      })
+    } finally {
+      setQuestionSaving(false)
+    }
+  }
+
   async function saveQuestion() {
     if (!questionDraft || questionSaving) return
     setQuestionSaving(true)
@@ -1462,6 +1486,13 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
                     {selectedFieldQuestion ? (
                       <div className="questionnaire-toggle-list layout-question-toggle">
+                        <ToggleCard
+                          label="Solo donne"
+                          description="Se attivo, questa domanda è destinata esclusivamente alle donatrici."
+                          checked={Boolean(selectedFieldQuestion.solo_donne)}
+                          disabled={questionSaving}
+                          onChange={(value) => void updateSelectedFieldQuestionOnlyWomen(value)}
+                        />
                         <ToggleCard
                           label="Omettibile per donatore periodico"
                           description="Se attivo, questa domanda potrà essere esclusa dal questionario ridotto del donatore periodico."
