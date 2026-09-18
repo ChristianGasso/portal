@@ -187,6 +187,19 @@ export async function salvaLayoutQuestionarioAvis(idAvis, campi) {
   })
 }
 
+export async function eliminaCampoLayoutQuestionarioAvis(idAvis, field) {
+  return portalRequest('/api/avis/questionario/layout.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      action: 'delete_field',
+      id_campo: Number(field?.id || 0) || null,
+      chiave_campo: String(field?.chiave_campo || ''),
+      pagina: Number(field?.pagina || 0),
+    }),
+  })
+}
+
 
 export async function scaricaAnteprimaQuestionarioAvis(idAvis, campi, paginaAnteprima = null) {
   const token = getPortalToken()
