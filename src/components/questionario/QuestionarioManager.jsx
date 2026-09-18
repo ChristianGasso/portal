@@ -437,26 +437,32 @@ export default function QuestionarioManager({ idAvis, onToast }) {
       'firma.medico',
     ]
 
+    const usedQuestionFields = new Set(
+      layout
+        .map((field) => String(field.chiave_campo || '').trim().toUpperCase())
+        .filter((key) => key.startsWith('DOMANDA:')),
+    )
+
     const questionFields = questions.flatMap((question) => {
       const code = String(question.codice || '').trim()
       if (!code) return []
 
       const responseType = String(question.tipo_risposta || '').trim().toUpperCase()
-      if (responseType === 'SI_NO') {
-        return [
-          'domanda:' + code + ':SI',
-          'domanda:' + code + ':NO',
-        ]
-      }
+      const candidates = responseType === 'SI_NO'
+        ? [
+            'domanda:' + code + ':SI',
+            'domanda:' + code + ':NO',
+          ]
+        : ['domanda:' + code]
 
-      return ['domanda:' + code]
+      return candidates.filter((key) => !usedQuestionFields.has(key.toUpperCase()))
     })
 
     return [
       ...fixed,
       ...questionFields,
     ]
-  }, [questions])
+  }, [questions, layout])
 
   const pageFields = layout
     .map((field, index) => ({ field, index }))
