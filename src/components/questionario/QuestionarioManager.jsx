@@ -1130,13 +1130,18 @@ export default function QuestionarioManager({ idAvis, onToast }) {
               <button type="button" className="secondary-button" onClick={() => void downloadPreviewPdf('full')} disabled={previewDownloading || !pdf.presente || !layout.length}>
                 {previewDownloading ? 'Preparazione PDF…' : 'Anteprima PDF completo'}
               </button>
-              <button type="button" className="primary-button" onClick={() => void saveLayout()} disabled={layoutSaving || !layoutDirty}>
-                {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva layout' : 'Layout salvato'}
-              </button>
             </div>
 
             {!layoutLoading ? (
               <div className="questionnaire-page-nav" aria-label="Pagine del questionario">
+                <button
+                  type="button"
+                  className="primary-button questionnaire-save-inline"
+                  onClick={() => void saveLayout()}
+                  disabled={layoutSaving || !layoutDirty}
+                >
+                  {layoutSaving ? 'Salvataggio…' : layoutDirty ? 'Salva layout' : 'Layout salvato'}
+                </button>
                 <div className="questionnaire-page-nav-copy">
                   <span className="section-kicker">PAGINA PDF</span>
                   <strong>{pdfPageCount ? `Pagina ${layoutPage} di ${pdfPageCount}` : 'Pagina non disponibile'}</strong>
