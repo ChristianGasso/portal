@@ -246,12 +246,6 @@ function portal_questionario_preview_draw(
 
     $encoded = portal_questionario_preview_encode($value);
     $pdf->SetFont('Helvetica', '', $fontSize);
-
-    while ($fontSize > 4.0 && $pdf->GetStringWidth($encoded) > $width) {
-        $fontSize -= 0.3;
-        $pdf->SetFont('Helvetica', '', $fontSize);
-    }
-
     $pdf->SetXY($x, $y);
     $pdf->Cell($width, $height, $encoded, 0, 0, $alignment);
 }
