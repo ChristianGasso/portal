@@ -720,19 +720,28 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     setLayout((current) => {
       const sourceField = current[index]
       const pair = checkPairIdentity(sourceField)
-      const shouldSyncVerticalPosition = pair && Object.prototype.hasOwnProperty.call(patch, 'y')
+      const syncedKeys = ['y', 'altezza', 'font_size', 'allineamento']
+      const pairPatch = pair
+        ? Object.fromEntries(
+            syncedKeys
+              .filter((key) => Object.prototype.hasOwnProperty.call(patch, key))
+              .map((key) => [key, patch[key]]),
+          )
+        : {}
+
+      const shouldSyncPair = pair && Object.keys(pairPatch).length > 0
 
       const next = current.map((field, currentIndex) => {
         if (currentIndex === index) return { ...field, ...patch }
 
-        if (shouldSyncVerticalPosition) {
+        if (shouldSyncPair) {
           const candidatePair = checkPairIdentity(field)
           if (
             candidatePair
             && candidatePair.code === pair.code
             && candidatePair.page === pair.page
           ) {
-            return { ...field, y: patch.y }
+            return { ...field, ...pairPatch }
           }
         }
 
