@@ -2180,6 +2180,14 @@ body.portal-questionario-active .questionnaire-page-buttons button {
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
 }
 
+.pdf-layout-stage.is-pannable {
+  cursor: grab;
+}
+
+.pdf-layout-stage.is-pannable:active {
+  cursor: grabbing;
+}
+
 .pdf-layout-canvas {
   position: absolute;
   inset: 0;
