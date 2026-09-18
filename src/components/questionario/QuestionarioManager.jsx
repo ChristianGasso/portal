@@ -122,21 +122,49 @@ function layoutTypeDefaults(type) {
   return null
 }
 
-function dedupeLayoutFields(fields) {
-  const seen = new Set()
-  const next = []
+function dedupeLayoutFields(fields, questionByCode = null) {
+  const source = Array.isArray(fields) ? fields : []
+  const byIdentity = new Map()
+  const questionPreferred = new Map()
 
-  for (const field of Array.isArray(fields) ? fields : []) {
-    const key = String(field?.chiave_campo || '').trim().toUpperCase()
+  for (const field of source) {
+    const rawKey = String(field?.chiave_campo || '').trim()
+    const key = rawKey.toUpperCase()
     const page = Number(field?.pagina || 1)
-    const identity = page + ':' + key
+    if (!key) continue
 
-    if (!key || seen.has(identity)) continue
-    seen.add(identity)
-    next.push(field)
+    const identity = page + ':' + key
+    if (!byIdentity.has(identity)) {
+      byIdentity.set(identity, field)
+    }
+
+    const code = questionCodeFromLayoutKey(rawKey)
+    const question = code && questionByCode ? questionByCode.get(code) : null
+    if (!question) continue
+
+    const expectedPage = Number(question.pagina_compilazione || page)
+    const existing = questionPreferred.get(key)
+
+    if (!existing || page === expectedPage) {
+      questionPreferred.set(key, { field, page, expectedPage })
+    }
   }
 
-  return next
+  const preferredKeys = new Set(
+    Array.from(questionPreferred.entries())
+      .filter(([, item]) => item.page === item.expectedPage)
+      .map(([key]) => key),
+  )
+
+  return Array.from(byIdentity.values()).filter((field) => {
+    const rawKey = String(field?.chiave_campo || '').trim()
+    const key = rawKey.toUpperCase()
+    const code = questionCodeFromLayoutKey(rawKey)
+    const question = code && questionByCode ? questionByCode.get(code) : null
+
+    if (!question || !preferredKeys.has(key)) return true
+    return Number(field.pagina || 1) === Number(question.pagina_compilazione || 1)
+  })
 }
 
 export default function QuestionarioManager({ idAvis, onToast }) {
@@ -210,7 +238,10 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     setLayoutLoading(true)
     try {
       const result = await caricaLayoutQuestionarioAvis(idAvis)
-      const rows = dedupeLayoutFields(Array.isArray(result?.campi) ? result.campi : [])
+      const rows = dedupeLayoutFields(
+        Array.isArray(result?.campi) ? result.campi : [],
+        questionByCode,
+      )
       setLayout(rows)
       layoutRef.current = rows
       setLayoutDirty(false)
@@ -727,13 +758,17 @@ export default function QuestionarioManager({ idAvis, onToast }) {
   }
 
   function removeField(index) {
-    setLayout((current) => {
-      const next = current.filter((_, currentIndex) => currentIndex !== index)
-      layoutRef.current = next
-      return next
-    })
+    const next = layoutRef.current.filter((_, currentIndex) => currentIndex !== index)
+
+    setLayout(next)
+    layoutRef.current = next
     setLayoutDirty(true)
     setSelectedFieldIndex(null)
+
+    void saveLayout(next, {
+      reload: true,
+      suppressSuccessToast: true,
+    })
   }
 
   function handleDrag(index, event) {
@@ -792,7 +827,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
     } = options
     setLayoutSaving(true)
     try {
-      const normalizedLayout = dedupeLayoutFields(layoutToSave)
+      const normalizedLayout = dedupeLayoutFields(layoutToSave, questionByCode)
       if (normalizedLayout.length !== layoutToSave.length) {
         setLayout(normalizedLayout)
         layoutRef.current = normalizedLayout
