@@ -2315,7 +2315,7 @@ body.portal-questionario-active .questionnaire-page-buttons button {
 .pdf-layout-vector-x {
   position: relative;
   display: block;
-  width: 72%;
+  width: 62%;
   aspect-ratio: 1;
 }
 
@@ -2326,8 +2326,8 @@ body.portal-questionario-active .questionnaire-page-buttons button {
   left: 50%;
   top: 50%;
   width: 100%;
-  height: max(2px, 10%);
-  border-radius: 999px;
+  height: max(1px, 7%);
+  border-radius: 0;
   background: currentColor;
   transform-origin: center;
 }
