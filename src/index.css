@@ -2889,3 +2889,89 @@ body.portal-questionario-active .questionnaire-page-buttons button {
 .portal-app.is-dark .portal-theme-toggle-label {
   color: inherit;
 }
+
+
+.production-deploy-card {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid rgba(191, 219, 254, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.production-deploy-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.production-deploy-card p {
+  margin: 0 0 14px;
+}
+
+.production-deploy-button {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: #fff;
+  color: #0f1c3e;
+  font-weight: 900;
+}
+
+.production-deploy-button:hover {
+  background: #eff6ff;
+}
+
+.production-deploy-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.portal-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.portal-confirm-card {
+  width: min(100%, 520px);
+  padding: 26px;
+  border-radius: 22px;
+  border: 1px solid #dbe5f4;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+}
+
+.portal-confirm-card h3 {
+  margin: 8px 0 10px;
+  font-size: 1.35rem;
+}
+
+.portal-confirm-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.portal-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+@media (max-width: 640px) {
+  .portal-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .portal-confirm-actions .primary-button,
+  .portal-confirm-actions .secondary-button {
+    width: 100%;
+  }
+}
