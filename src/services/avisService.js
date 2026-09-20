@@ -265,3 +265,14 @@ export async function resetQuestionarioAvis(idAvis) {
     }),
   })
 }
+
+
+export async function eseguiQueryAvis(idAvis, query) {
+  return portalRequest('/api/avis/query.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      id_avis: Number(idAvis),
+      query: String(query || ''),
+    }),
+  })
+}
