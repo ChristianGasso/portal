@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { aggiornaGestionaleProduction } from '../services/deployService'
+
 const stats = [
   { label: 'AVIS registrate', value: '—', note: 'Dati in collegamento' },
   { label: 'Operatori collegati', value: '—', note: 'Gestiti nelle AVIS' },
@@ -6,8 +9,48 @@ const stats = [
 ]
 
 export default function DashboardPage({ onNavigate }) {
+  const [deployConfirmOpen, setDeployConfirmOpen] = useState(false)
+  const [deploying, setDeploying] = useState(false)
+  const [toast, setToast] = useState(null)
+
+  async function confirmProductionDeploy() {
+    if (deploying) return
+
+    setDeploying(true)
+    setDeployConfirmOpen(false)
+
+    try {
+      const result = await aggiornaGestionaleProduction()
+      setToast({
+        tone: 'success',
+        title: result.updated ? 'Produzione aggiornata' : 'Nessun aggiornamento necessario',
+        message: result.message || 'Operazione completata.',
+      })
+    } catch (error) {
+      setToast({
+        tone: 'error',
+        title: 'Aggiornamento non completato',
+        message: error instanceof Error ? error.message : 'Non è stato possibile aggiornare il Gestionale in produzione.',
+      })
+    } finally {
+      setDeploying(false)
+      window.setTimeout(() => setToast(null), 5000)
+    }
+  }
+
   return (
     <div className="page-stack">
+      {toast ? (
+        <button
+          type="button"
+          className={`portal-toast is-${toast.tone}`}
+          onClick={() => setToast(null)}
+        >
+          <strong>{toast.title}</strong>
+          <span>{toast.message}</span>
+        </button>
+      ) : null}
+
       <section className="hero-panel">
         <div>
           <span className="section-kicker">AMMINISTRAZIONE CENTRALE</span>
@@ -55,11 +98,58 @@ export default function DashboardPage({ onNavigate }) {
           <span className="section-kicker">STATO PORTAL</span>
           <h3>Ambiente pronto</h3>
           <p>
-            Frontend, build automatica e deploy IONOS sono configurati. Il prossimo passaggio è collegare autenticazione e dati reali.
+            Frontend, build automatica e deploy IONOS sono configurati.
           </p>
           <div className="system-status"><span /> Deploy automatico attivo</div>
+
+          <div className="production-deploy-card">
+            <strong>Gestionale produzione</strong>
+            <p>Porta le modifiche presenti su main nel branch production.</p>
+            <button
+              type="button"
+              className="production-deploy-button"
+              disabled={deploying}
+              onClick={() => setDeployConfirmOpen(true)}
+            >
+              {deploying ? 'Aggiornamento in corso…' : 'Aggiorna produzione'}
+            </button>
+          </div>
         </article>
       </section>
+
+      {deployConfirmOpen ? (
+        <div className="portal-confirm-backdrop" role="presentation" onMouseDown={() => setDeployConfirmOpen(false)}>
+          <section
+            className="portal-confirm-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="deploy-confirm-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className="section-kicker">AGGIORNAMENTO PRODUZIONE</span>
+            <h3 id="deploy-confirm-title">Portare main in produzione?</h3>
+            <p>
+              Le modifiche presenti su <strong>main</strong> verranno portate nel branch <strong>production</strong> del Gestionale.
+            </p>
+            <div className="portal-confirm-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setDeployConfirmOpen(false)}
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => void confirmProductionDeploy()}
+              >
+                Aggiorna produzione
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   )
 }
