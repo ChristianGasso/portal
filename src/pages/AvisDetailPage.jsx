@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import QuestionarioManager from '../components/questionario/QuestionarioManager'
+import AvisQueryConsole from '../components/avis/AvisQueryConsole'
 import {
   aggiornaGeneraleAvis,
   aggiornaLimitiAvis,
@@ -14,6 +15,7 @@ const tabs = [
   { key: 'limiti', label: 'Limiti' },
   { key: 'logo', label: 'Logo' },
   { key: 'questionario', label: 'Questionario' },
+  { key: 'query', label: 'Query DB' },
 ]
 
 const hiddenLimitKeys = new Set(['id', 'id_avis', 'created_at', 'updated_at'])
@@ -536,7 +538,11 @@ export default function AvisDetailPage({ idAvis, onBack }) {
         <QuestionarioManager idAvis={idAvis} onToast={setToast} />
       ) : null}
 
-      {activeTab !== 'questionario' ? (
+      {activeTab === 'query' ? (
+        <AvisQueryConsole idAvis={idAvis} onToast={setToast} />
+      ) : null}
+
+      {activeTab !== 'questionario' && activeTab !== 'query' ? (
         <section className="panel-card avis-database-note">
           <span className="section-kicker">COLLEGAMENTO OPERATIVO</span>
           <strong>{Object.keys(database).length > 0 ? 'Database AVIS associato' : 'Configurazione database da verificare'}</strong>
