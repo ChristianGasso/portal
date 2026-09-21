@@ -30,7 +30,7 @@ function deploy_github_request(string $method, string $path, array $config, ?arr
 {
     $curl = curl_init('https://api.github.com' . $path);
     if ($curl === false) {
-        portal_error('Non è stato possibile inizializzare il collegamento con GitHub.', 500);
+        throw new RuntimeException('Impossibile inizializzare cURL verso GitHub.');
     }
 
     $headers = [
@@ -43,8 +43,10 @@ function deploy_github_request(string $method, string $path, array $config, ?arr
     $options = [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_CUSTOMREQUEST => $method,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_NOSIGNAL => true,
+        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
     ];
 
     if ($body !== null) {
@@ -61,10 +63,14 @@ function deploy_github_request(string $method, string $path, array $config, ?arr
 
     $raw = curl_exec($curl);
     $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+    $curlError = curl_error($curl);
+    $curlErrno = curl_errno($curl);
     curl_close($curl);
 
     if ($raw === false) {
-        portal_error('GitHub non è raggiungibile in questo momento.', 502);
+        throw new RuntimeException(
+            'Chiamata GitHub fallita (cURL ' . $curlErrno . '): ' . ($curlError !== '' ? $curlError : 'errore sconosciuto')
+        );
     }
 
     $payload = json_decode((string)$raw, true);
@@ -189,5 +195,10 @@ try {
     ]);
 } catch (Throwable $error) {
     error_log('[portal deploy gestionale] ' . $error::class . ': ' . $error->getMessage());
-    portal_error('Non è stato possibile aggiornare il frontend di produzione.', 500);
+
+    portal_json([
+        'success' => false,
+        'error' => 'Non è stato possibile aggiornare il frontend di produzione.',
+        'debug' => $error->getMessage(),
+    ], 502);
 }
