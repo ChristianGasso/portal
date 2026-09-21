@@ -107,14 +107,45 @@ try {
         portal_error('Configurazione del deploy Gestionale incompleta.', 500);
     }
 
-    $sourceSha = deploy_branch_sha($config, $config['source_branch']);
+    $curlAvailable = function_exists('curl_init');
+    $curlInfo = $curlAvailable && function_exists('curl_version') ? curl_version() : [];
+    $dns = @gethostbyname('api.github.com');
+    $dnsResolved = is_string($dns) && $dns !== '' && $dns !== 'api.github.com';
+
+    $streamOk = false;
+    $streamError = null;
+    set_error_handler(static function (int $severity, string $message) use (&$streamError): bool {
+        $streamError = $message;
+        return true;
+    });
+    try {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 8,
+                'header' => "User-Agent: SanguePro-Portal-Diagnostic\r\nAccept: application/vnd.github+json\r\n",
+            ],
+        ]);
+        $streamResponse = @file_get_contents('https://api.github.com', false, $context);
+        $streamOk = is_string($streamResponse) && $streamResponse !== '';
+    } finally {
+        restore_error_handler();
+    }
 
     portal_json([
         'success' => true,
-        'debug' => 'step 1 ok: lettura branch main completata',
-        'source_sha' => $sourceSha,
+        'debug' => 'diagnostica rete GitHub',
+        'curl_available' => $curlAvailable,
+        'curl_version' => is_array($curlInfo) ? ($curlInfo['version'] ?? null) : null,
+        'ssl_version' => is_array($curlInfo) ? ($curlInfo['ssl_version'] ?? null) : null,
+        'dns_resolved' => $dnsResolved,
+        'dns_value' => $dnsResolved ? $dns : null,
+        'allow_url_fopen' => (bool)ini_get('allow_url_fopen'),
+        'stream_https_ok' => $streamOk,
+        'stream_error' => $streamError,
     ]);
 
+    $sourceSha = deploy_branch_sha($config, $config['source_branch']);
     $productionSha = deploy_branch_sha($config, $config['production_branch']);
 
     if ($sourceSha === '' || $productionSha === '') {
