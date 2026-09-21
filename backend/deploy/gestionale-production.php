@@ -95,7 +95,14 @@ function deploy_branch_sha(array $config, string $branch): string
     );
 
     if ($response['status'] !== 200) {
-        portal_error('Non è stato possibile verificare i branch del Gestionale.', 502);
+        $githubMessage = trim((string)($response['data']['message'] ?? ''));
+
+        portal_json([
+            'success' => false,
+            'error' => 'Non è stato possibile verificare i branch del Gestionale.',
+            'github_status' => $response['status'],
+            'github_message' => $githubMessage !== '' ? $githubMessage : null,
+        ], 200);
     }
 
     return trim((string)($response['data']['object']['sha'] ?? ''));
