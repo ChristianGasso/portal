@@ -7,11 +7,6 @@ require_once __DIR__ . '/../auth/bootstrap.php';
 portal_boot('POST');
 portal_require_admin();
 
-portal_json([
-    'success' => true,
-    'debug' => 'endpoint raggiunto',
-]);
-
 function deploy_github_config(): array
 {
     $github = portal_config('github');
@@ -113,6 +108,13 @@ try {
     }
 
     $sourceSha = deploy_branch_sha($config, $config['source_branch']);
+
+    portal_json([
+        'success' => true,
+        'debug' => 'step 1 ok: lettura branch main completata',
+        'source_sha' => $sourceSha,
+    ]);
+
     $productionSha = deploy_branch_sha($config, $config['production_branch']);
 
     if ($sourceSha === '' || $productionSha === '') {
