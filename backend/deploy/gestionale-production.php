@@ -53,8 +53,9 @@ function deploy_github_request(string $method, string $path, array $config, ?arr
     if ($body !== null) {
         $encoded = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if (!is_string($encoded)) {
-            portal_error('Non è stato possibile preparare la richiesta GitHub.', 500);
+            throw new RuntimeException('Non è stato possibile preparare la richiesta GitHub.');
         }
+
         $headers[] = 'Content-Type: application/json';
         $options[CURLOPT_POSTFIELDS] = $encoded;
     }
@@ -82,47 +83,57 @@ function deploy_github_request(string $method, string $path, array $config, ?arr
     ];
 }
 
-function deploy_branch_sha(array $config, string $branch): string
+function deploy_github_error(array $response, string $fallback, int $httpStatus = 424): never
+{
+    $githubMessage = trim((string)($response['data']['message'] ?? ''));
+
+    portal_json([
+        'success' => false,
+        'error' => $fallback,
+        'github_status' => (int)($response['status'] ?? 0),
+        'github_message' => $githubMessage !== '' ? $githubMessage : null,
+    ], $httpStatus);
+}
+
+function deploy_compare_branches(array $config): array
 {
     $owner = rawurlencode($config['owner']);
     $repo = rawurlencode($config['repo']);
-    $branch = rawurlencode($branch);
+    $base = rawurlencode($config['production_branch']);
+    $head = rawurlencode($config['source_branch']);
 
     $response = deploy_github_request(
         'GET',
-        "/repos/{$owner}/{$repo}/git/ref/heads/{$branch}",
+        "/repos/{$owner}/{$repo}/compare/{$base}...{$head}",
         $config
     );
 
     if ($response['status'] !== 200) {
-        $githubMessage = trim((string)($response['data']['message'] ?? ''));
-
-        portal_json([
-            'success' => false,
-            'error' => 'Non è stato possibile verificare i branch del Gestionale.',
-            'github_status' => $response['status'],
-            'github_message' => $githubMessage !== '' ? $githubMessage : null,
-        ], 200);
+        deploy_github_error(
+            $response,
+            'Non è stato possibile confrontare i branch del Gestionale.'
+        );
     }
 
-    return trim((string)($response['data']['object']['sha'] ?? ''));
+    return $response['data'];
 }
 
 try {
     $config = deploy_github_config();
 
-    if ($config['owner'] === '' || $config['repo'] === '' || $config['source_branch'] === '' || $config['production_branch'] === '') {
+    if (
+        $config['owner'] === ''
+        || $config['repo'] === ''
+        || $config['source_branch'] === ''
+        || $config['production_branch'] === ''
+    ) {
         portal_error('Configurazione del deploy Gestionale incompleta.', 500);
     }
 
-    $sourceSha = deploy_branch_sha($config, $config['source_branch']);
-    $productionSha = deploy_branch_sha($config, $config['production_branch']);
+    $comparison = deploy_compare_branches($config);
+    $aheadBy = (int)($comparison['ahead_by'] ?? 0);
 
-    if ($sourceSha === '' || $productionSha === '') {
-        portal_error('Non è stato possibile leggere lo stato dei branch del Gestionale.', 502);
-    }
-
-    if (hash_equals($sourceSha, $productionSha)) {
+    if ($aheadBy <= 0) {
         portal_json([
             'success' => true,
             'updated' => false,
@@ -142,7 +153,10 @@ try {
     );
 
     if ($pulls['status'] !== 200) {
-        portal_error('Non è stato possibile verificare le richieste di aggiornamento esistenti.', 502);
+        deploy_github_error(
+            $pulls,
+            'Non è stato possibile verificare le richieste di aggiornamento esistenti.'
+        );
     }
 
     $pullRequest = is_array($pulls['data'][0] ?? null) ? $pulls['data'][0] : null;
@@ -161,11 +175,9 @@ try {
         );
 
         if ($created['status'] !== 201) {
-            $message = trim((string)($created['data']['message'] ?? ''));
-            portal_error(
-                $message !== ''
-                    ? 'GitHub non ha potuto creare la richiesta di aggiornamento: ' . $message
-                    : 'Non è stato possibile creare la richiesta di aggiornamento.',
+            deploy_github_error(
+                $created,
+                'GitHub non ha potuto creare la richiesta di aggiornamento.',
                 409
             );
         }
@@ -175,7 +187,7 @@ try {
 
     $pullNumber = (int)($pullRequest['number'] ?? 0);
     if ($pullNumber <= 0) {
-        portal_error('La richiesta di aggiornamento GitHub non è valida.', 502);
+        portal_error('La richiesta di aggiornamento GitHub non è valida.', 500);
     }
 
     $merge = deploy_github_request(
@@ -185,12 +197,10 @@ try {
         ['merge_method' => 'merge']
     );
 
-    if (!(bool)($merge['data']['merged'] ?? false)) {
-        $message = trim((string)($merge['data']['message'] ?? ''));
-        portal_error(
-            $message !== ''
-                ? 'GitHub non ha completato l’aggiornamento: ' . $message
-                : 'L’aggiornamento non può essere completato automaticamente. Controlla la Pull Request su GitHub.',
+    if ($merge['status'] !== 200 || !(bool)($merge['data']['merged'] ?? false)) {
+        deploy_github_error(
+            $merge,
+            'GitHub non ha completato l’aggiornamento. Controlla la Pull Request su GitHub.',
             409
         );
     }
@@ -200,6 +210,7 @@ try {
         'updated' => true,
         'message' => 'Frontend di produzione aggiornato correttamente.',
         'pull_request' => $pullNumber,
+        'commits_published' => $aheadBy,
     ]);
 } catch (Throwable $error) {
     error_log('[portal deploy gestionale] ' . $error::class . ': ' . $error->getMessage());
@@ -207,6 +218,5 @@ try {
     portal_json([
         'success' => false,
         'error' => 'Non è stato possibile aggiornare il frontend di produzione.',
-        'debug' => $error->getMessage(),
-    ], 502);
+    ], 500);
 }
