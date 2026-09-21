@@ -7,6 +7,11 @@ require_once __DIR__ . '/../auth/bootstrap.php';
 portal_boot('POST');
 portal_require_admin();
 
+portal_json([
+    'success' => true,
+    'debug' => 'endpoint raggiunto',
+]);
+
 function deploy_github_config(): array
 {
     $github = portal_config('github');
