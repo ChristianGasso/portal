@@ -109,40 +109,77 @@ try {
 
     $curlAvailable = function_exists('curl_init');
     $curlInfo = $curlAvailable && function_exists('curl_version') ? curl_version() : [];
-    $dns = @gethostbyname('api.github.com');
-    $dnsResolved = is_string($dns) && $dns !== '' && $dns !== 'api.github.com';
 
-    $streamOk = false;
-    $streamError = null;
-    set_error_handler(static function (int $severity, string $message) use (&$streamError): bool {
-        $streamError = $message;
-        return true;
-    });
-    try {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 8,
-                'header' => "User-Agent: SanguePro-Portal-Diagnostic\r\nAccept: application/vnd.github+json\r\n",
-            ],
-        ]);
-        $streamResponse = @file_get_contents('https://api.github.com', false, $context);
-        $streamOk = is_string($streamResponse) && $streamResponse !== '';
-    } finally {
-        restore_error_handler();
+    $curlBaseOk = false;
+    $curlBaseStatus = null;
+    $curlBaseError = null;
+
+    if ($curlAvailable) {
+        $testCurl = curl_init('https://api.github.com');
+        if ($testCurl !== false) {
+            curl_setopt_array($testCurl, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT => 5,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github+json',
+                    'User-Agent: SanguePro-Portal-Diagnostic',
+                ],
+            ]);
+
+            $testRaw = curl_exec($testCurl);
+            $curlBaseStatus = (int)curl_getinfo($testCurl, CURLINFO_RESPONSE_CODE);
+            $curlBaseError = curl_error($testCurl);
+            $curlBaseOk = is_string($testRaw) && $curlBaseStatus >= 200 && $curlBaseStatus < 500;
+            curl_close($testCurl);
+        }
+    }
+
+    $owner = rawurlencode($config['owner']);
+    $repo = rawurlencode($config['repo']);
+    $ref = rawurlencode('heads/' . $config['source_branch']);
+    $branchUrl = "https://api.github.com/repos/{$owner}/{$repo}/git/ref/{$ref}";
+
+    $curlBranchOk = false;
+    $curlBranchStatus = null;
+    $curlBranchError = null;
+
+    if ($curlAvailable) {
+        $branchCurl = curl_init($branchUrl);
+        if ($branchCurl !== false) {
+            curl_setopt_array($branchCurl, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT => 5,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github+json',
+                    'X-GitHub-Api-Version: 2022-11-28',
+                    'User-Agent: SanguePro-Portal-Diagnostic',
+                ],
+            ]);
+
+            $branchRaw = curl_exec($branchCurl);
+            $curlBranchStatus = (int)curl_getinfo($branchCurl, CURLINFO_RESPONSE_CODE);
+            $curlBranchError = curl_error($branchCurl);
+            $curlBranchOk = is_string($branchRaw) && $curlBranchStatus === 200;
+            curl_close($branchCurl);
+        }
     }
 
     portal_json([
         'success' => true,
-        'debug' => 'diagnostica rete GitHub',
+        'debug' => 'diagnostica cURL GitHub HTTP/1.1 senza token',
         'curl_available' => $curlAvailable,
         'curl_version' => is_array($curlInfo) ? ($curlInfo['version'] ?? null) : null,
         'ssl_version' => is_array($curlInfo) ? ($curlInfo['ssl_version'] ?? null) : null,
-        'dns_resolved' => $dnsResolved,
-        'dns_value' => $dnsResolved ? $dns : null,
-        'allow_url_fopen' => (bool)ini_get('allow_url_fopen'),
-        'stream_https_ok' => $streamOk,
-        'stream_error' => $streamError,
+        'curl_base_ok' => $curlBaseOk,
+        'curl_base_status' => $curlBaseStatus,
+        'curl_base_error' => $curlBaseError,
+        'curl_branch_ok' => $curlBranchOk,
+        'curl_branch_status' => $curlBranchStatus,
+        'curl_branch_error' => $curlBranchError,
     ]);
 
     $sourceSha = deploy_branch_sha($config, $config['source_branch']);
