@@ -7,24 +7,46 @@ function cellValue(value) {
   return String(value)
 }
 
+function isWriteQuery(value) {
+  const sql = String(value || '').trim()
+  return /^(INSERT|UPDATE|DELETE|REPLACE)\b/i.test(sql)
+    || /^ALTER\s+TABLE\b/i.test(sql)
+    || /^CREATE\s+TABLE\b/i.test(sql)
+}
+
 export default function AvisQueryConsole({ idAvis, onToast }) {
   const [query, setQuery] = useState('SELECT * FROM persone LIMIT 20')
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState(null)
+  const [confirmWrite, setConfirmWrite] = useState(false)
 
-  async function executeQuery() {
+  async function executeQuery(confirmed = false) {
     if (!query.trim() || running) return
 
+    if (isWriteQuery(query) && !confirmed) {
+      setConfirmWrite(true)
+      return
+    }
+
+    setConfirmWrite(false)
     setRunning(true)
     try {
       const data = await eseguiQueryAvis(idAvis, query)
       setResult(data)
-      onToast?.({
-        tone: 'success',
-        message: data.truncated
-          ? 'Query completata. Sono mostrate le prime 500 righe.'
-          : `Query completata: ${data.row_count} righe restituite.`,
-      })
+
+      if (data.mode === 'write') {
+        onToast?.({
+          tone: 'success',
+          message: `Query ${data.operation || 'SQL'} eseguita: ${data.affected_rows ?? 0} righe interessate.`,
+        })
+      } else {
+        onToast?.({
+          tone: 'success',
+          message: data.truncated
+            ? 'Query completata. Sono mostrate le prime 500 righe.'
+            : `Query completata: ${data.row_count} righe restituite.`,
+        })
+      }
     } catch (error) {
       setResult(null)
       onToast?.({
@@ -38,14 +60,17 @@ export default function AvisQueryConsole({ idAvis, onToast }) {
 
   const columns = Array.isArray(result?.columns) ? result.columns : []
   const rows = Array.isArray(result?.rows) ? result.rows : []
+  const writeMode = result?.mode === 'write'
 
   return (
     <section className="panel-card avis-detail-panel query-console">
       <div className="portal-form-heading">
         <div>
           <span className="section-kicker">DATABASE AVIS</span>
-          <h3>Query di lettura</h3>
-          <p>Esegui SELECT, SHOW, DESCRIBE o EXPLAIN sul database operativo della AVIS selezionata.</p>
+          <h3>Console SQL</h3>
+          <p>
+            Esegui query di lettura e operazioni amministrative sul database operativo della AVIS selezionata.
+          </p>
         </div>
         <button type="button" className="primary-button" onClick={() => void executeQuery()} disabled={running || !query.trim()}>
           {running ? 'Esecuzione…' : 'Esegui query'}
@@ -56,26 +81,52 @@ export default function AvisQueryConsole({ idAvis, onToast }) {
         <span>Query SQL</span>
         <textarea
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value)
+            setConfirmWrite(false)
+          }}
           spellCheck="false"
           disabled={running}
-          placeholder="SELECT * FROM persone LIMIT 20"
+          placeholder="UPDATE persone SET ... WHERE ..."
         />
       </label>
 
       <div className="query-console-hint">
-        Console in sola lettura. Sono mostrate al massimo 500 righe per esecuzione.
+        Consentiti: SELECT, SHOW, DESCRIBE, EXPLAIN, INSERT, UPDATE, DELETE, REPLACE, ALTER TABLE e CREATE TABLE.
+        È possibile eseguire una sola query alla volta. DROP e TRUNCATE restano bloccati.
       </div>
+
+      {confirmWrite ? (
+        <div className="query-console-hint">
+          <strong>Conferma modifica database.</strong>{' '}
+          Questa query può modificare dati o struttura della AVIS selezionata.
+          <div className="portal-form-actions">
+            <button type="button" className="text-button" onClick={() => setConfirmWrite(false)} disabled={running}>
+              Annulla
+            </button>
+            <button type="button" className="primary-button" onClick={() => void executeQuery(true)} disabled={running}>
+              Conferma ed esegui
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {result ? (
         <div className="query-result">
           <div className="query-result-summary">
-            <strong>{result.row_count} righe</strong>
+            <strong>
+              {writeMode
+                ? `${result.affected_rows ?? 0} righe interessate`
+                : `${result.row_count} righe`}
+            </strong>
             <span>{result.duration_ms} ms</span>
+            {result.operation ? <span>{result.operation}</span> : null}
             {result.truncated ? <span>Risultato limitato a 500 righe</span> : null}
           </div>
 
-          {columns.length > 0 ? (
+          {writeMode ? (
+            <p className="muted-copy">Operazione completata sul database operativo della AVIS.</p>
+          ) : columns.length > 0 ? (
             <div className="query-result-table-wrap">
               <table className="query-result-table">
                 <thead>
