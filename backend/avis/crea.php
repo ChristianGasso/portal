@@ -13,71 +13,6 @@ function portal_avis_normalize_code(int $idAvis): string
     return str_pad((string)$idAvis, 5, '0', STR_PAD_LEFT);
 }
 
-function portal_avis_database_config_for_code(string $code): array
-{
-    $configs = portal_config('avis_databases');
-
-    if (!is_array($configs) || $configs === []) {
-        throw new RuntimeException('Configurazione database AVIS non disponibile.');
-    }
-
-    $candidates = [
-        $code,
-        ltrim($code, '0'),
-        'avis_' . $code,
-        'avis_' . ltrim($code, '0'),
-    ];
-
-    foreach (array_unique($candidates) as $candidate) {
-        if (isset($configs[$candidate]) && is_array($configs[$candidate])) {
-            return $configs[$candidate];
-        }
-    }
-
-    foreach ($configs as $config) {
-        if (!is_array($config)) {
-            continue;
-        }
-
-        $configuredCode = trim((string)($config['codice_sede'] ?? $config['codice'] ?? ''));
-        if ($configuredCode === '') {
-            continue;
-        }
-
-        $digits = preg_replace('/\D+/', '', $configuredCode) ?? '';
-        if ($digits !== '' && str_pad($digits, 5, '0', STR_PAD_LEFT) === $code) {
-            return $config;
-        }
-    }
-
-    throw new RuntimeException('Database operativo non configurato per la nuova AVIS.');
-}
-
-function portal_avis_connect_operational_database(array $config): PDO
-{
-    $host = trim((string)($config['host'] ?? ''));
-    $port = (int)($config['port'] ?? 3306);
-    $name = trim((string)($config['name'] ?? $config['database'] ?? $config['dbname'] ?? ''));
-    $user = trim((string)($config['user'] ?? $config['username'] ?? ''));
-    $password = (string)($config['password'] ?? $config['pass'] ?? '');
-    $charset = trim((string)($config['charset'] ?? 'utf8mb4'));
-
-    if ($host === '' || $name === '' || $user === '') {
-        throw new RuntimeException('Configurazione database operativo incompleta.');
-    }
-
-    return new PDO(
-        sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $name, $charset),
-        $user,
-        $password,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ]
-    );
-}
-
 function portal_avis_database_tables(PDO $pdo): array
 {
     $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
@@ -521,8 +456,8 @@ if (!filter_var($admin['email'], FILTER_VALIDATE_EMAIL)) {
 $code = portal_avis_normalize_code($idAvis);
 
 try {
-    $databaseConfig = portal_avis_database_config_for_code($code);
-    $operationalPdo = portal_avis_connect_operational_database($databaseConfig);
+    $databaseConfig = portal_avis_database_config_for_code($code, $idAvis);
+    $operationalPdo = portal_avis_connect_database_config($databaseConfig);
     portal_avis_ensure_operational_schema($operationalPdo);
 
     $operationalPdo->beginTransaction();
