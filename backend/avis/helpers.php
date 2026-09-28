@@ -89,33 +89,52 @@ function portal_avis_code(array $avis): string
     throw new RuntimeException('Codice AVIS non disponibile.');
 }
 
-function portal_avis_operational_db(int $idAvis): array
+function portal_avis_shared_database_configs(): array
 {
-    static $connections = [];
+    static $configs = null;
 
-    $portalPdo = portal_db();
-    $avis = portal_avis_require_exists($portalPdo, $idAvis);
-    $code = portal_avis_code($avis);
-    $scopeId = (int)ltrim($code, '0');
-    if ($scopeId <= 0) {
-        $scopeId = (int)$code;
+    if (is_array($configs)) {
+        return $configs;
     }
 
-    if (isset($connections[$idAvis]) && $connections[$idAvis]['pdo'] instanceof PDO) {
-        return $connections[$idAvis];
+    $configuredPath = trim((string)(portal_config('shared_databases_file') ?? ''));
+    $root = dirname(__DIR__, 4);
+    $candidates = array_values(array_unique(array_filter([
+        $configuredPath,
+        $root . '/Gestionale-Avis/SanguePro-Shared/databases.php',
+        $root . '/SanguePro-Shared/databases.php',
+    ], static fn(string $path): bool => $path !== '')));
+
+    $mappingFile = null;
+    foreach ($candidates as $candidate) {
+        if (is_file($candidate)) {
+            $mappingFile = $candidate;
+            break;
+        }
     }
 
-    $configs = portal_config('avis_databases');
-    if (!is_array($configs) || $configs === []) {
-        throw new RuntimeException('Configurazione database AVIS non disponibile.');
+    if ($mappingFile === null) {
+        throw new RuntimeException('Mappatura database AVIS condivisa non disponibile.');
     }
 
-    $databaseRow = null;
-    try {
-        $databaseRow = portal_avis_load_row($portalPdo, 'avis_database', $idAvis);
-    } catch (Throwable) {
-        $databaseRow = null;
+    $shared = require $mappingFile;
+    $databases = is_array($shared) ? ($shared['databases'] ?? null) : null;
+
+    if (!is_array($databases) || $databases === []) {
+        throw new RuntimeException('Mappatura database AVIS condivisa non valida.');
     }
+
+    $configs = $databases;
+
+    return $configs;
+}
+
+function portal_avis_database_config_for_code(
+    string $code,
+    int $idAvis = 0,
+    ?array $databaseRow = null
+): array {
+    $configs = portal_avis_shared_database_configs();
 
     $candidates = [
         $code,
@@ -135,49 +154,46 @@ function portal_avis_operational_db(int $idAvis): array
         }
     }
 
-    $selected = null;
     foreach (array_unique($candidates) as $candidate) {
         if (isset($configs[$candidate]) && is_array($configs[$candidate])) {
-            $selected = $configs[$candidate];
-            break;
+            return $configs[$candidate];
         }
     }
 
-    if ($selected === null) {
-        foreach ($configs as $config) {
-            if (!is_array($config)) {
-                continue;
-            }
+    foreach ($configs as $config) {
+        if (!is_array($config)) {
+            continue;
+        }
 
-            $configuredCode = trim((string)($config['codice_sede'] ?? $config['codice'] ?? ''));
-            $configuredIdAvis = (int)($config['id_avis'] ?? 0);
+        $configuredCode = trim((string)($config['codice_sede'] ?? $config['codice'] ?? ''));
+        $configuredIdAvis = (int)($config['id_avis'] ?? 0);
 
-            if (
-                ($configuredCode !== '' && str_pad((preg_replace('/\D+/', '', $configuredCode) ?? ''), 5, '0', STR_PAD_LEFT) === $code)
-                || ($configuredIdAvis > 0 && $configuredIdAvis === $idAvis)
-            ) {
-                $selected = $config;
-                break;
-            }
+        if (
+            ($configuredCode !== ''
+                && str_pad((preg_replace('/\\D+/', '', $configuredCode) ?? ''), 5, '0', STR_PAD_LEFT) === $code)
+            || ($idAvis > 0 && $configuredIdAvis === $idAvis)
+        ) {
+            return $config;
         }
     }
 
-    if (!is_array($selected)) {
-        throw new RuntimeException('Database operativo non configurato per questa AVIS.');
-    }
+    throw new RuntimeException('Database operativo non configurato per questa AVIS.');
+}
 
-    $host = trim((string)($selected['host'] ?? ''));
-    $port = (int)($selected['port'] ?? 3306);
-    $name = trim((string)($selected['name'] ?? $selected['database'] ?? $selected['dbname'] ?? ''));
-    $user = trim((string)($selected['user'] ?? $selected['username'] ?? ''));
-    $password = (string)($selected['password'] ?? $selected['pass'] ?? '');
-    $charset = trim((string)($selected['charset'] ?? 'utf8mb4'));
+function portal_avis_connect_database_config(array $config): PDO
+{
+    $host = trim((string)($config['host'] ?? ''));
+    $port = (int)($config['port'] ?? 3306);
+    $name = trim((string)($config['name'] ?? $config['database'] ?? $config['dbname'] ?? ''));
+    $user = trim((string)($config['user'] ?? $config['username'] ?? ''));
+    $password = (string)($config['password'] ?? $config['pass'] ?? '');
+    $charset = trim((string)($config['charset'] ?? 'utf8mb4'));
 
     if ($host === '' || $name === '' || $user === '') {
         throw new RuntimeException('Configurazione database operativo incompleta.');
     }
 
-    $pdo = new PDO(
+    return new PDO(
         sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $name, $charset),
         $user,
         $password,
@@ -187,6 +203,33 @@ function portal_avis_operational_db(int $idAvis): array
             PDO::ATTR_EMULATE_PREPARES => false,
         ]
     );
+}
+
+function portal_avis_operational_db(int $idAvis): array
+{
+    static $connections = [];
+
+    $portalPdo = portal_db();
+    $avis = portal_avis_require_exists($portalPdo, $idAvis);
+    $code = portal_avis_code($avis);
+    $scopeId = (int)ltrim($code, '0');
+    if ($scopeId <= 0) {
+        $scopeId = (int)$code;
+    }
+
+    if (isset($connections[$idAvis]) && $connections[$idAvis]['pdo'] instanceof PDO) {
+        return $connections[$idAvis];
+    }
+
+    $databaseRow = null;
+    try {
+        $databaseRow = portal_avis_load_row($portalPdo, 'avis_database', $idAvis);
+    } catch (Throwable) {
+        $databaseRow = null;
+    }
+
+    $selected = portal_avis_database_config_for_code($code, $idAvis, $databaseRow);
+    $pdo = portal_avis_connect_database_config($selected);
 
     $connections[$idAvis] = [
         'pdo' => $pdo,
