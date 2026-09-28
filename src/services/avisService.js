@@ -35,6 +35,13 @@ export async function caricaAvis() {
   return Array.isArray(data?.avis) ? data.avis : []
 }
 
+export async function creaAvis(payload) {
+  return portalRequest('/api/avis/crea.php', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function caricaDettaglioAvis(idAvis) {
   const id = Number(idAvis)
   if (!Number.isInteger(id) || id <= 0) {
