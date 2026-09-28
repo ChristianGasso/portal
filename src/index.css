@@ -3082,3 +3082,89 @@ body.portal-questionario-active .questionnaire-page-buttons button {
 .query-result-table tr:last-child td {
   border-bottom: 0;
 }
+
+
+.avis-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avis-create-modal {
+  width: min(100%, 860px);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+}
+
+.avis-create-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.avis-create-heading h3 {
+  margin: 7px 0 8px;
+}
+
+.avis-create-heading p,
+.avis-create-section p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.avis-create-form {
+  display: grid;
+  gap: 22px;
+  margin-top: 24px;
+}
+
+.avis-create-section {
+  display: grid;
+  gap: 14px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.avis-create-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.avis-create-section h4 {
+  margin: 5px 0 0;
+}
+
+.avis-create-email {
+  grid-column: 1 / -1;
+}
+
+.portal-app.is-dark .avis-create-section {
+  border-top-color: #26364f;
+}
+
+.portal-app.is-dark .avis-create-heading p,
+.portal-app.is-dark .avis-create-section p {
+  color: #94a3b8;
+}
+
+@media (max-width: 760px) {
+  .avis-page-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .avis-page-actions .primary-button {
+    width: 100%;
+  }
+
+  .avis-create-heading {
+    flex-direction: column;
+  }
+
+  .avis-create-email {
+    grid-column: auto;
+  }
+}
