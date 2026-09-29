@@ -14,7 +14,7 @@ if ($idAvis <= 0) {
 
 function portal_avis_related_row(PDO $pdo, string $table, int $idAvis): ?array
 {
-    $allowedTables = ['avis_database', 'avis_configurazione', 'avis_limiti'];
+    $allowedTables = ['avis_configurazione', 'avis_limiti'];
     if (!in_array($table, $allowedTables, true)) {
         throw new InvalidArgumentException('Tabella AVIS non consentita.');
     }
@@ -40,7 +40,6 @@ try {
     portal_json([
         'success' => true,
         'avis' => $avis,
-        'database' => portal_avis_related_row($pdo, 'avis_database', $idAvis),
         'configurazione' => portal_avis_related_row($pdo, 'avis_configurazione', $idAvis),
         'limiti' => portal_avis_related_row($pdo, 'avis_limiti', $idAvis),
     ]);
