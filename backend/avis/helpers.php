@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 function portal_avis_table_columns(PDO $pdo, string $table): array
 {
-    $allowed = ['avis', 'avis_configurazione', 'avis_limiti', 'avis_database'];
+    $allowed = ['avis', 'avis_configurazione', 'avis_limiti'];
     if (!in_array($table, $allowed, true)) {
         throw new InvalidArgumentException('Tabella AVIS non consentita.');
     }
@@ -131,8 +131,7 @@ function portal_avis_shared_database_configs(): array
 
 function portal_avis_database_config_for_code(
     string $code,
-    int $idAvis = 0,
-    ?array $databaseRow = null
+    int $idAvis = 0
 ): array {
     $configs = portal_avis_shared_database_configs();
 
@@ -143,16 +142,6 @@ function portal_avis_database_config_for_code(
         'avis_' . ltrim($code, '0'),
     ];
 
-    if (is_array($databaseRow)) {
-        foreach ($databaseRow as $value) {
-            if (is_scalar($value)) {
-                $candidate = trim((string)$value);
-                if ($candidate !== '') {
-                    $candidates[] = $candidate;
-                }
-            }
-        }
-    }
 
     foreach (array_unique($candidates) as $candidate) {
         if (isset($configs[$candidate]) && is_array($configs[$candidate])) {
@@ -221,14 +210,7 @@ function portal_avis_operational_db(int $idAvis): array
         return $connections[$idAvis];
     }
 
-    $databaseRow = null;
-    try {
-        $databaseRow = portal_avis_load_row($portalPdo, 'avis_database', $idAvis);
-    } catch (Throwable) {
-        $databaseRow = null;
-    }
-
-    $selected = portal_avis_database_config_for_code($code, $idAvis, $databaseRow);
+    $selected = portal_avis_database_config_for_code($code, $idAvis);
     $pdo = portal_avis_connect_database_config($selected);
 
     $connections[$idAvis] = [
