@@ -341,11 +341,15 @@ function portal_avis_create_initial_admin(string $site, array $admin): array
     $url = is_array($provisioning)
         ? trim((string)($provisioning['initial_admin_url'] ?? ''))
         : '';
+    if ($url === '') {
+        $url = 'https://sangueprogestionale.it/newservices/services/gestione-permessi/crea_admin_iniziale.php';
+    }
+
     $secret = is_array($provisioning)
         ? trim((string)($provisioning['shared_secret'] ?? ''))
         : '';
 
-    if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL) || $secret === '') {
+    if (!filter_var($url, FILTER_VALIDATE_URL) || $secret === '') {
         throw new RuntimeException('Configurazione provisioning amministratore non disponibile.');
     }
 
