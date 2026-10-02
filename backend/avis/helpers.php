@@ -97,10 +97,10 @@ function portal_avis_shared_database_configs(): array
         return $configs;
     }
 
-    // In produzione helpers.php viene pubblicato in /portal/api/avis.
+    // In produzione helpers.php viene pubblicato in /portal/public/api/avis.
     // Risaliamo alla root dello spazio IONOS e usiamo esclusivamente
     // /SanguePro-Shared/databases.php, cartella sorella di /portal.
-    $mappingFile = dirname(__DIR__, 3) . '/SanguePro-Shared/databases.php';
+    $mappingFile = dirname(__DIR__, 4) . '/SanguePro-Shared/databases.php';
 
     if (!is_file($mappingFile)) {
         throw new RuntimeException(
