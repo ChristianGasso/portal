@@ -126,38 +126,31 @@ function portal_avis_database_config_for_code(
 ): array {
     $configs = portal_avis_shared_database_configs();
 
-    $candidates = [
-        $code,
-        ltrim($code, '0'),
-        'avis_' . $code,
-        'avis_' . ltrim($code, '0'),
-    ];
-
-
-    foreach (array_unique($candidates) as $candidate) {
-        if (isset($configs[$candidate]) && is_array($configs[$candidate])) {
-            return $configs[$candidate];
-        }
+    if (isset($configs[$code]) && is_array($configs[$code])) {
+        return $configs[$code];
     }
 
-    foreach ($configs as $config) {
-        if (!is_array($config)) {
-            continue;
-        }
+    $availableKeys = array_values(array_filter(
+        array_map(
+            static fn(mixed $key): string => trim((string)$key),
+            array_keys($configs)
+        ),
+        static fn(string $key): bool => $key !== ''
+    ));
 
-        $configuredCode = trim((string)($config['codice_sede'] ?? $config['codice'] ?? ''));
-        $configuredIdAvis = (int)($config['id_avis'] ?? 0);
-
-        if (
-            ($configuredCode !== ''
-                && str_pad((preg_replace('/\\D+/', '', $configuredCode) ?? ''), 5, '0', STR_PAD_LEFT) === $code)
-            || ($idAvis > 0 && $configuredIdAvis === $idAvis)
-        ) {
-            return $config;
-        }
+    sort($availableKeys, SORT_NATURAL);
+    if (count($availableKeys) > 20) {
+        $availableKeys = array_slice($availableKeys, 0, 20);
+        $availableKeys[] = '…';
     }
 
-    throw new RuntimeException('Database operativo non configurato per questa AVIS.');
+    throw new RuntimeException(
+        'Database operativo non configurato per questa AVIS. '
+        . 'Chiave richiesta: ' . $code . '. '
+        . 'Chiavi presenti: '
+        . ($availableKeys !== [] ? implode(', ', $availableKeys) : 'nessuna')
+        . '.'
+    );
 }
 
 function portal_avis_connect_database_config(array $config): PDO
