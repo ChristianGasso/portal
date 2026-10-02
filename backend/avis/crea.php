@@ -405,6 +405,15 @@ function portal_avis_create_initial_admin(string $site, array $admin): array
         );
     }
 
+    $operator = $response['amministratore'] ?? null;
+    $cloudflareOperatorId = is_array($operator) ? (int)($operator['id'] ?? 0) : 0;
+    if ($cloudflareOperatorId <= 0) {
+        throw new RuntimeException('Il provisioning non ha confermato la creazione dell’operatore su Cloudflare.');
+    }
+
+    $response['cloudflare_registrato'] = true;
+    $response['cloudflare_operatore_id'] = $cloudflareOperatorId;
+
     return $response;
 }
 
@@ -481,6 +490,8 @@ try {
         ],
         'limiti' => $limits,
         'amministratore' => $adminResult['amministratore'] ?? null,
+        'cloudflare_registrato' => (bool)($adminResult['cloudflare_registrato'] ?? false),
+        'cloudflare_operatore_id' => (int)($adminResult['cloudflare_operatore_id'] ?? 0),
         'email_inviata' => (bool)($adminResult['email_inviata'] ?? false),
     ], 201);
 } catch (Throwable $error) {
