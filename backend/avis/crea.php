@@ -426,6 +426,8 @@ function portal_avis_create_initial_admin(string $site, array $admin): array
     $responseBody = curl_exec($curl);
     $curlError = curl_error($curl);
     $statusCode = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    $contentType = trim((string)(curl_getinfo($curl, CURLINFO_CONTENT_TYPE) ?: ''));
+    $effectiveUrl = trim((string)(curl_getinfo($curl, CURLINFO_EFFECTIVE_URL) ?: $url));
     curl_close($curl);
 
     if ($responseBody === false) {
@@ -438,7 +440,32 @@ function portal_avis_create_initial_admin(string $site, array $admin): array
 
     $response = json_decode((string)$responseBody, true);
     if (!is_array($response)) {
-        throw new RuntimeException('Risposta provisioning amministratore non valida.');
+        $preview = html_entity_decode(
+            strip_tags((string)$responseBody),
+            ENT_QUOTES | ENT_HTML5,
+            'UTF-8'
+        );
+        $preview = preg_replace('/\\s+/', ' ', $preview);
+        $preview = is_string($preview) ? trim($preview) : '';
+        if (mb_strlen($preview) > 300) {
+            $preview = mb_substr($preview, 0, 300) . '…';
+        }
+
+        $details = [
+            'HTTP ' . ($statusCode > 0 ? (string)$statusCode : 'non disponibile'),
+            'Content-Type ' . ($contentType !== '' ? $contentType : 'non disponibile'),
+        ];
+
+        if ($effectiveUrl !== '') {
+            $details[] = 'URL ' . $effectiveUrl;
+        }
+        if ($preview !== '') {
+            $details[] = 'Risposta: ' . $preview;
+        }
+
+        throw new RuntimeException(
+            'Risposta provisioning non JSON (' . implode('; ', $details) . ').'
+        );
     }
 
     if ($statusCode < 200 || $statusCode >= 300 || empty($response['success'])) {
