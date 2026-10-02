@@ -335,6 +335,47 @@ function portal_avis_require_exists_or_null(PDO $pdo, int $idAvis): ?array
     return is_array($row) ? $row : null;
 }
 
+function portal_avis_provisioning_stage_label(string $stage): string
+{
+    $labels = [
+        'database' => 'Database AVIS',
+        'cloudflare' => 'Cloudflare D1',
+        'local_account' => 'Account amministratore locale',
+        'invite' => 'Invito di attivazione',
+    ];
+
+    return $labels[$stage] ?? 'Provisioning amministratore';
+}
+
+function portal_avis_creation_diagnostic(string $stage, Throwable $error): array
+{
+    $labels = [
+        'database_config' => 'Configurazione/connessione database operativo AVIS',
+        'operational_schema' => 'Verifica schema database operativo AVIS',
+        'operational_data' => 'Scrittura dati AVIS nel database operativo',
+        'central_data' => 'Scrittura dati AVIS nel database centrale Portal',
+        'initial_admin' => 'Creazione primo amministratore',
+    ];
+
+    $label = $labels[$stage] ?? 'Creazione AVIS';
+    $detail = '';
+
+    // Evita di esporre messaggi PDO che possono contenere dettagli dell'infrastruttura.
+    if (!($error instanceof PDOException)) {
+        $detail = trim((string)$error->getMessage());
+    }
+
+    if ($detail === '') {
+        $detail = 'Errore interno durante questo passaggio.';
+    }
+
+    return [
+        'error' => $label . ': ' . $detail,
+        'stage' => $stage,
+        'error_code' => 'AVIS_CREATE_' . strtoupper($stage),
+    ];
+}
+
 function portal_avis_create_initial_admin(string $site, array $admin): array
 {
     $provisioning = portal_config('provisioning');
@@ -402,11 +443,19 @@ function portal_avis_create_initial_admin(string $site, array $admin): array
 
     if ($statusCode < 200 || $statusCode >= 300 || empty($response['success'])) {
         $message = trim((string)($response['error'] ?? ''));
-        throw new RuntimeException(
-            $message !== ''
-                ? 'Provisioning amministratore: ' . $message
-                : 'Il backend Gestionale ha rifiutato la creazione dell’amministratore.'
-        );
+        $backendStage = trim((string)($response['stage'] ?? ''));
+        $backendCode = trim((string)($response['error_code'] ?? ''));
+        $stageLabel = portal_avis_provisioning_stage_label($backendStage);
+
+        $detail = $message !== ''
+            ? $message
+            : 'Il backend Gestionale ha rifiutato la creazione dell’amministratore.';
+
+        if ($backendCode !== '') {
+            $detail .= ' [' . $backendCode . ']';
+        }
+
+        throw new RuntimeException($stageLabel . ': ' . $detail);
     }
 
     $operator = $response['amministratore'] ?? null;
@@ -467,21 +516,27 @@ if (!filter_var($admin['email'], FILTER_VALIDATE_EMAIL)) {
 }
 
 $code = portal_avis_normalize_code($idAvis);
+$stage = 'database_config';
 
 try {
     $databaseConfig = portal_avis_database_config_for_code($code, $idAvis);
     $operationalPdo = portal_avis_connect_database_config($databaseConfig);
+
+    $stage = 'operational_schema';
     portal_avis_ensure_operational_schema($operationalPdo);
 
+    $stage = 'operational_data';
     $operationalPdo->beginTransaction();
     portal_avis_upsert_operational_data($operationalPdo, $idAvis, $nome, $code, $limits);
     $operationalPdo->commit();
 
+    $stage = 'central_data';
     $centralPdo = portal_db();
     $centralPdo->beginTransaction();
     portal_avis_upsert_central_data($centralPdo, $idAvis, $nome, $code, $limits);
     $centralPdo->commit();
 
+    $stage = 'initial_admin';
     $adminResult = portal_avis_create_initial_admin($code, $admin);
 
     portal_json([
@@ -506,6 +561,17 @@ try {
         $centralPdo->rollBack();
     }
 
-    error_log('[portal_avis_crea] ' . $error::class . ': ' . $error->getMessage());
-    portal_error('Non è stato possibile completare la creazione della AVIS.', 500);
+    $diagnostic = portal_avis_creation_diagnostic($stage, $error);
+
+    error_log(
+        '[portal_avis_crea][' . $stage . '] '
+        . $error::class . ': ' . $error->getMessage()
+    );
+
+    portal_json([
+        'success' => false,
+        'error' => $diagnostic['error'],
+        'stage' => $diagnostic['stage'],
+        'error_code' => $diagnostic['error_code'],
+    ], 500);
 }
