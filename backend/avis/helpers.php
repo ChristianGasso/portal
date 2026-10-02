@@ -97,11 +97,14 @@ function portal_avis_shared_database_configs(): array
         return $configs;
     }
 
-    $mappingFile = '/SanguePro-Shared/databases.php';
+    // In produzione helpers.php viene pubblicato in /portal/api/avis.
+    // Risaliamo alla root dello spazio IONOS e usiamo esclusivamente
+    // /SanguePro-Shared/databases.php, cartella sorella di /portal.
+    $mappingFile = dirname(__DIR__, 3) . '/SanguePro-Shared/databases.php';
 
     if (!is_file($mappingFile)) {
         throw new RuntimeException(
-            'Mappatura database AVIS condivisa non disponibile in /SanguePro-Shared/databases.php.'
+            'Mappatura database AVIS condivisa non disponibile in SanguePro-Shared/databases.php.'
         );
     }
 
