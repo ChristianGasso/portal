@@ -97,24 +97,12 @@ function portal_avis_shared_database_configs(): array
         return $configs;
     }
 
-    $configuredPath = trim((string)(portal_config('shared_databases_file') ?? ''));
-    $root = dirname(__DIR__, 4);
-    $candidates = array_values(array_unique(array_filter([
-        $configuredPath,
-        $root . '/Gestionale-Avis/SanguePro-Shared/databases.php',
-        $root . '/SanguePro-Shared/databases.php',
-    ], static fn(string $path): bool => $path !== '')));
+    $mappingFile = '/SanguePro-Shared/databases.php';
 
-    $mappingFile = null;
-    foreach ($candidates as $candidate) {
-        if (is_file($candidate)) {
-            $mappingFile = $candidate;
-            break;
-        }
-    }
-
-    if ($mappingFile === null) {
-        throw new RuntimeException('Mappatura database AVIS condivisa non disponibile.');
+    if (!is_file($mappingFile)) {
+        throw new RuntimeException(
+            'Mappatura database AVIS condivisa non disponibile in /SanguePro-Shared/databases.php.'
+        );
     }
 
     $shared = require $mappingFile;
