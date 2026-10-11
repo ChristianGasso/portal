@@ -44,6 +44,7 @@ function layoutFieldPreview(key, type = '') {
 
   if (normalizedType === 'check') return 'X'
   const examples = {
+    'avis.nome': 'AVIS Comunale',
     'donatore.nome': 'Mario',
     'donatore.cognome': 'Rossi',
     'donatore.nome_completo': 'Mario Rossi',
@@ -97,6 +98,7 @@ function checkPairIdentity(field) {
 function layoutFieldLabel(key) {
   const normalized = String(key || '').trim().toLowerCase()
   const labels = {
+    'avis.nome': 'Denominazione AVIS',
     'donatore.nome': 'Nome donatore',
     'donatore.cognome': 'Cognome donatore',
     'donatore.nome_completo': 'Nome e cognome donatore',
@@ -546,6 +548,7 @@ export default function QuestionarioManager({ idAvis, onToast }) {
 
   const fieldSuggestions = useMemo(() => {
     const fixed = [
+      'avis.nome',
       'donatore.nome',
       'donatore.cognome',
       'donatore.nome_completo',
