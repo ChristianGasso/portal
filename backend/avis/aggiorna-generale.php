@@ -44,8 +44,37 @@ try {
         $params[':attiva'] = $attiva;
     }
 
-    $stmt = $pdo->prepare('UPDATE avis SET ' . implode(', ', $sets) . ' WHERE id = :id');
-    $stmt->execute($params);
+    // Mantieni la denominazione nel database operativo della stessa AVIS.
+    // Le stampe del Gestionale leggono esclusivamente da questo database.
+    $operational = portal_avis_operational_db($idAvis);
+    $operationalPdo = $operational['pdo'];
+    $operationalId = (int)$operational['scope_id'];
+
+    $pdo->beginTransaction();
+    $operationalPdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('UPDATE avis SET ' . implode(', ', $sets) . ' WHERE id = :id');
+        $stmt->execute($params);
+
+        $opStmt = $operationalPdo->prepare(
+            'UPDATE avis SET nome = :nome WHERE id = :id'
+        );
+        $opStmt->execute([':nome' => $nome, ':id' => $operationalId]);
+        if ($opStmt->rowCount() === 0) {
+            $check = $operationalPdo->prepare('SELECT id FROM avis WHERE id = :id LIMIT 1');
+            $check->execute([':id' => $operationalId]);
+            if (!$check->fetchColumn()) {
+                throw new RuntimeException('AVIS non trovata nel database operativo.');
+            }
+        }
+
+        $operationalPdo->commit();
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($operationalPdo->inTransaction()) $operationalPdo->rollBack();
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $error;
+    }
 
     portal_json([
         'success' => true,
