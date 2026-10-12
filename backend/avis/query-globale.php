@@ -43,7 +43,7 @@ try {
                 }
                 $rows = [];
                 while (count($rows) < 100 && ($row = $statement->fetch(PDO::FETCH_ASSOC)) !== false) $rows[]=$row;
-                $entry += ['success'=>true,'columns'=>$columns,'rows'=>$rows,'truncated'=>$statement->fetch(PDO::FETCH_ASSOC)!==false,'row_count'=>count($rows)];
+                $entry = array_merge($entry, ['success'=>true,'columns'=>$columns,'rows'=>$rows,'truncated'=>$statement->fetch(PDO::FETCH_ASSOC)!==false,'row_count'=>count($rows)]);
             } else {
                 $pdo->beginTransaction();
                 try {
@@ -51,7 +51,7 @@ try {
                     $statement->execute();
                     $affected = $statement->rowCount();
                     $pdo->commit();
-                    $entry += ['success'=>true,'affected_rows'=>$affected];
+                    $entry = array_merge($entry, ['success'=>true,'affected_rows'=>$affected]);
                 } catch (Throwable $e) {
                     if ($pdo->inTransaction()) $pdo->rollBack();
                     throw $e;
