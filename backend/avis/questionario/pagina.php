@@ -24,7 +24,7 @@ if ($action !== 'source') {
 try {
     $portalPdo = portal_db();
     $avis = portal_avis_require_exists($portalPdo, $idAvis);
-    $codiceSede = portal_avis_code($avis);
+    $codiceSede = (string)(int)portal_avis_code($avis);
     $pdfContent = portal_media_questionario_pdf_read($codiceSede);
 
     if ($pdfContent === null) {
