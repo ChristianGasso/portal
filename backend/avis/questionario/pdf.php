@@ -20,7 +20,9 @@ if ($idAvis <= 0) {
 try {
     $portalPdo = portal_db();
     $avis = portal_avis_require_exists($portalPdo, $idAvis);
-    $codiceSede = portal_avis_code($avis);
+    // Il mapping del database usa cinque cifre (es. 03272), mentre i file media
+    // sono archiviati con il codice AVIS effettivo (es. 3272).
+    $codiceSede = (string)(int)portal_avis_code($avis);
 
     if ($action === 'load') {
         $content = portal_media_questionario_pdf_read($codiceSede);
