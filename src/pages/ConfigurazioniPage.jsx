@@ -43,7 +43,7 @@ export default function ConfigurazioniPage() {
           <div>
             <span className="section-kicker">TUTTI I DATABASE MAPPATI</span>
             <h3>Console SQL globale</h3>
-            <p>La stessa query viene eseguita su ogni database del mapping condiviso. Per le modifiche, l'esecuzione si interrompe al primo errore.</p>
+            <p>La stessa query viene eseguita su ogni database del mapping condiviso. Gli errori vengono segnalati per sede, senza interrompere l'esecuzione sulle altre.</p>
           </div>
           <button type="button" className="primary-button" disabled={running || !query.trim()} onClick={() => execute()}>
             {running ? 'Esecuzione…' : 'Esegui su tutti'}
@@ -56,7 +56,13 @@ export default function ConfigurazioniPage() {
         {confirm ? (
           <div className="query-console-hint">
             <strong>Conferma modifica di tutti i database mappati.</strong>
-            <p>Ogni database viene aggiornato separatamente. Le modifiche già completate non vengono annullate se un altro database fallisce.</p>
+            <p>Ogni database viene aggiornato separatamente: un errore non blocca le altre sedi e le modifiche già completate non vengono annullate.</p>
+            {/^CREATE\s+TABLE\b/i.test(query.trim()) && (
+              <p>CREATE TABLE utilizza automaticamente IF NOT EXISTS: le tabelle già presenti vengono lasciate invariate. La loro struttura non viene confrontata con la query.</p>
+            )}
+            {/^(?:CREATE|ALTER)\s+TABLE\b/i.test(query.trim()) && (
+              <p>Le modifiche strutturali MySQL non possono essere annullate tramite rollback.</p>
+            )}
             <div className="portal-form-actions">
               <button className="text-button" type="button" onClick={() => setConfirm(false)}>Annulla</button>
               <button className="primary-button" type="button" onClick={() => execute(true)}>Confermo, esegui su tutti</button>
@@ -67,11 +73,25 @@ export default function ConfigurazioniPage() {
         {result ? (
           <div className="query-result">
             <p><strong>Database esaminati: {result.processed} / {result.total_mapped}</strong></p>
+            {result.summary && (
+              <div className="query-console-hint">
+                <strong>Riepilogo: {result.summary.succeeded} operazioni riuscite · {result.summary.failed} errori</strong>
+                {result.operation === 'CREATE TABLE' && (
+                  <p>Tabelle create: {result.summary.created} · Già presenti: {result.summary.already_exists} · Errori: {result.summary.failed}</p>
+                )}
+                {result.summary.failed > 0 && (
+                  <p>Controlla gli errori delle singole sedi qui sotto: gli altri database sono stati comunque elaborati.</p>
+                )}
+              </div>
+            )}
             {result.results.map((item, i) => (
               <div key={item.codice_sede + i} className="query-console-hint">
                 <strong>Sede {item.codice_sede} — {item.success ? 'OK' : 'ERRORE'}</strong>
                 {item.error ? <p>{item.error}</p> : null}
-                {item.affected_rows !== undefined ? <p>Righe interessate: {item.affected_rows}</p> : null}
+                {item.status === 'created' ? <p>Tabella creata.</p> : null}
+                {item.status === 'already_exists' ? <p>Tabella già presente; struttura non verificata.</p> : null}
+                {item.affected_rows !== undefined && result.operation !== 'CREATE TABLE' && result.operation !== 'ALTER TABLE'
+                  ? <p>Righe interessate: {item.affected_rows}</p> : null}
                 {item.rows ? (
                   <div className="query-result-table-wrap">
                     <table className="query-result-table">
