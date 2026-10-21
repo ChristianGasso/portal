@@ -52,6 +52,13 @@ export async function caricaDettaglioAvis(idAvis) {
 }
 
 
+export async function eseguiNotificheAvis(idAvis, tipo) {
+  return portalRequest('/api/avis/esegui-notifiche.php', {
+    method: 'POST',
+    body: JSON.stringify({ id_avis: Number(idAvis), tipo }),
+  })
+}
+
 export async function aggiornaGeneraleAvis(idAvis, payload) {
   return portalRequest('/api/avis/aggiorna-generale.php', {
     method: 'POST',

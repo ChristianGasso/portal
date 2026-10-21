@@ -34,6 +34,10 @@ jobs:
       - name: Esegui build
         run: npm run build
 
+      - name: Verifica PHP Portal
+        run: |
+          php -l backend/avis/esegui-notifiche.php
+
       - name: Prepara backend PHP
         run: |
           mkdir -p dist/api

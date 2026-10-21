@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import QuestionarioManager from '../components/questionario/QuestionarioManager'
 import AvisQueryConsole from '../components/avis/AvisQueryConsole'
 import {
@@ -7,11 +7,13 @@ import {
   aggiornaServiziAvis,
   caricaDettaglioAvis,
   gestisciLogoAvis,
+  eseguiNotificheAvis,
 } from '../services/avisService'
 
 const tabs = [
   { key: 'generale', label: 'Generale' },
   { key: 'servizi', label: 'Servizi' },
+  { key: 'invio-notifiche', label: 'Invio notifiche' },
   { key: 'limiti', label: 'Limiti' },
   { key: 'logo', label: 'Logo' },
   { key: 'questionario', label: 'Questionario' },
@@ -109,6 +111,7 @@ function ToggleCard({ label, description, checked, onChange, disabled }) {
 }
 
 export default function AvisDetailPage({ idAvis, onBack }) {
+  const currentAvisRef = useRef(idAvis)
   const [detail, setDetail] = useState(null)
   const [activeTab, setActiveTab] = useState('generale')
   const [loading, setLoading] = useState(true)
@@ -121,6 +124,9 @@ export default function AvisDetailPage({ idAvis, onBack }) {
     app_donatori_attiva: false,
     registrazione_attiva: false,
   })
+  const [notificaDaConfermare, setNotificaDaConfermare] = useState(null)
+  const [notificaInEsecuzione, setNotificaInEsecuzione] = useState('')
+  const [esitiNotifiche, setEsitiNotifiche] = useState({})
   const [limitsForm, setLimitsForm] = useState({})
   const [logo, setLogo] = useState({ presente: false, url: null, data_url: null })
   const [logoLoading, setLogoLoading] = useState(false)
@@ -170,6 +176,10 @@ export default function AvisDetailPage({ idAvis, onBack }) {
   }
 
   useEffect(() => {
+    currentAvisRef.current = idAvis
+    setNotificaDaConfermare(null)
+    setEsitiNotifiche({})
+    setNotificaInEsecuzione('')
     void loadDetail()
   }, [idAvis])
 
@@ -280,6 +290,26 @@ export default function AvisDetailPage({ idAvis, onBack }) {
       setToast({ tone: 'error', message: requestError.message || 'Non è stato possibile aggiornare i servizi.' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function avviaNotifica(tipo) {
+    if (!notificaDaConfermare || notificaInEsecuzione) return
+    const avisInvio = idAvis
+    setNotificaDaConfermare(null)
+    setNotificaInEsecuzione(tipo)
+    setEsitiNotifiche((current) => ({ ...current, [tipo]: null }))
+    try {
+      const result = await eseguiNotificheAvis(avisInvio, tipo)
+      if (currentAvisRef.current !== avisInvio) return
+      setEsitiNotifiche((current) => ({ ...current, [tipo]: result?.conteggi ?? {} }))
+      setToast({ tone: 'success', message: result.message || 'Procedura notifiche completata.' })
+    } catch (requestError) {
+      if (currentAvisRef.current === avisInvio) {
+        setToast({ tone: 'error', message: requestError.message || 'La procedura di invio non è riuscita.' })
+      }
+    } finally {
+      if (currentAvisRef.current === avisInvio) setNotificaInEsecuzione('')
     }
   }
 
@@ -427,6 +457,76 @@ export default function AvisDetailPage({ idAvis, onBack }) {
             />
           </div>
         </section>
+      ) : null}
+
+      {activeTab === 'invio-notifiche' ? (
+        <section className="panel-card avis-detail-panel">
+          <div className="portal-form-heading">
+            <div>
+              <span className="section-kicker">INVIO MANUALE</span>
+              <h3>Notifiche automatiche</h3>
+              <p>Avvia subito un controllo e l'eventuale invio esclusivamente per {name}. Le programmazioni IONOS non cambiano.</p>
+            </div>
+          </div>
+          <div className="avis-notification-list">
+            {[
+              {
+                tipo: 'nuove_raccolte',
+                titolo: 'Notifiche nuove raccolte',
+                descrizione: 'Elabora gli avvisi in attesa per le nuove raccolte della AVIS selezionata.',
+              },
+              {
+                tipo: 'scadenza_idoneita',
+                titolo: 'Scadenza idoneità',
+                descrizione: 'Controlla le scadenze di idoneità e invia le notifiche dovute ai donatori della AVIS selezionata.',
+              },
+            ].map((opzione) => (
+              <div className="avis-notification-item" key={opzione.tipo}>
+                <div className="avis-notification-details">
+                  <strong>{opzione.titolo}</strong>
+                  <span>{opzione.descrizione}</span>
+                  {esitiNotifiche[opzione.tipo] ? (
+                    <div className="avis-notification-result" aria-live="polite">
+                      <strong>Ultima esecuzione manuale completata</strong>
+                      <span>
+                        {opzione.tipo === 'nuove_raccolte'
+                          ? `Eventi elaborati: ${esitiNotifiche[opzione.tipo].eventi_letti ?? 0} · Notifiche accettate: ${esitiNotifiche[opzione.tipo].push_accettate ?? 0} · Errori: ${esitiNotifiche[opzione.tipo].errori_push ?? 0}`
+                          : `Donatori valutati: ${esitiNotifiche[opzione.tipo].valutati ?? 0} · Notifiche inviate: ${esitiNotifiche[opzione.tipo].inviati ?? 0} · Errori: ${esitiNotifiche[opzione.tipo].errori_invio ?? 0}`}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={Boolean(notificaInEsecuzione)}
+                  onClick={() => setNotificaDaConfermare(opzione)}
+                >
+                  {notificaInEsecuzione === opzione.tipo ? 'Invio in corso…' : 'Esegui ora'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {notificaDaConfermare ? (
+        <div className="portal-confirm-backdrop">
+          <div className="portal-confirm-card" role="dialog" aria-modal="true" aria-labelledby="avis-notification-dialog-title">
+            <span className="section-kicker">CONFERMA INVIO</span>
+            <h3 id="avis-notification-dialog-title">Avviare {notificaDaConfermare.titolo.toLowerCase()}?</h3>
+            <p>
+              La procedura invierà le notifiche dovute soltanto ai donatori di <strong>{name}</strong>
+              {code ? ` (codice ${code})` : ''}. Non verranno coinvolte le altre AVIS.
+            </p>
+            <div className="portal-confirm-actions">
+              <button type="button" className="secondary-button" onClick={() => setNotificaDaConfermare(null)}>Annulla</button>
+              <button type="button" className="primary-button" onClick={() => void avviaNotifica(notificaDaConfermare.tipo)}>
+                Conferma ed esegui
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {activeTab === 'limiti' ? (
